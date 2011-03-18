@@ -25,7 +25,7 @@ int main(int ac, char **av)
 }
 
 
-int forgearp(unsigned char *sendermac, unsigned char *senderip, unsigned char *recvmac, unsigned char *recvip)
+int send_arp_reply(unsigned char *sendermac, unsigned char *senderip, unsigned char *recvmac, unsigned char *recvip)
 {
   arph arp;
   arp.ar_hrd = 1;
