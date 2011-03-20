@@ -4,6 +4,8 @@
 # define ARP_REQUEST   1        /* ARP request.  */
 # define ARP_REPLY     2        /* ARP reply.  */
 
+# include <stdint.h>
+
 struct arpheader
 {
   uint16_t ar_hrd;      /* Format of hardware address.  */
