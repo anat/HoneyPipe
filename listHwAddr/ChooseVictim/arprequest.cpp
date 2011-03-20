@@ -1,21 +1,16 @@
 #include "arprequest.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netpacket/packet.h>
 #include <net/ethernet.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-
-#include <signal.h>
 #include <string.h>
-#include <errno.h>
 #include <stdint.h>
 #include <iostream>
+#include "packet.h"
+
 ARPRequest::ARPRequest()
 {
 
@@ -50,16 +45,10 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
     if (bind(rsock, (struct sockaddr *) &sll, sizeof(struct sockaddr_ll)) == -1)
     {
         std::cout << "Couldn't bind !" << std::endl;
-          return 0;
-  }
-      printf("Bound to interface #%d (%x:%x:%x:%x:%x:%x)\n", interface.index(),
-             src_hwaddr[0], src_hwaddr[1], src_hwaddr[2],
-             src_hwaddr[3], src_hwaddr[4], src_hwaddr[5]);
-      printf("--- Sending ARP requests ---\n");
+        return 0;
+    }
 
-
-
-      memset(dst_hwaddr, 0xff, 6);
+    memset(dst_hwaddr, 0xff, 6);
 
       this->craftETH(&packet.eth_head, 0x0806,
                 src_hwaddr,

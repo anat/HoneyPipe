@@ -60,7 +60,7 @@ void MainWindow::scan()
         //int dst_ip = 0xfe00a8c0;
         int dst_ip = 0xf000a8c0;
         uint8_t* rep = arpr.doRequest(currentInterface, currentIP.ip().toIPv4Address(), dst_ip);
-        if ((int)rep == 0)
+        if (rep == NULL)
             std::cout << "failed !!!" << std::endl;
         else
             printf("Found MAC : (%x:%x:%x:%x:%x:%x)\n",
