@@ -21,7 +21,7 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
     uint8_t* foundMAC = new uint8_t[6];
     uint8_t src_hwaddr[6], dst_hwaddr[6];
     int rsock;
-    struct pack packet;
+    //struct pack packet;
 
     std::cout << "Creating socket" << std::endl;
     if ((rsock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1)
@@ -49,26 +49,34 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
     }
 
     memset(dst_hwaddr, 0xff, 6);
-
-      this->craftETH(&packet.eth_head, 0x0806,
+ethheader ethHeader;
+arpheader arpHeader;
+      Packet p(this->craftETH(&ethHeader, 0x0806,
                 src_hwaddr,
-                dst_hwaddr);
+                dst_hwaddr));
       memset(dst_hwaddr, 0x00, 6);
-      this->craftARP(&packet.arp_head,
-                src_hwaddr, (unsigned char *)&src_ip,
-                dst_hwaddr, (unsigned char *)&dst_ip);
+      this->craftARP(&arpHeader,
+                      src_hwaddr, (unsigned char *)&src_ip,
+                      dst_hwaddr, (unsigned char *)&dst_ip);
+
+
+      p.append(&arpHeader);
+
+
       std::cout << "Writing" << std::endl;
-      if (write(rsock, &packet, sizeof(packet)) == -1)
+/*
+      if (write(rsock, p.getBuffer(), sizeof(packet)) == -1)
         return 0;
       if (read(rsock, &packet, sizeof(packet)) == -1)
           std::cout << "failed" << std::endl;
       close(rsock);
 
         memcpy(foundMAC, packet.arp_head.ar_sha, 6);
+*/
         return foundMAC;
 }
 
-void ARPRequest::craftARP(arpheader *arp,
+arpheader* ARPRequest::craftARP(arpheader *arp,
                uint8_t *srcmac, uint8_t *srcip,
                uint8_t *dstmac, uint8_t *dstip)
 {
@@ -81,12 +89,14 @@ void ARPRequest::craftARP(arpheader *arp,
   memcpy(arp->ar_sip, srcip, 4);
   memcpy(arp->ar_tha, dstmac, 6);
   memcpy(arp->ar_tip, dstip, 4);
+  return arp;
 }
 
-void ARPRequest::craftETH(ethheader *eth, uint16_t type,
+ethheader* ARPRequest::craftETH(ethheader *eth, uint16_t type,
                           uint8_t *srcmac, uint8_t *dstmac)
 {
   eth->type = htons(type);
   memcpy(eth->ar_tha, dstmac, 6);
   memcpy(eth->ar_sha, srcmac, 6);
+  return eth;
 }
