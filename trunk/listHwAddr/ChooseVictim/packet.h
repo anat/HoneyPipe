@@ -2,6 +2,7 @@
 # define PACKET_H
 # include "eth.h"
 
+
 class Packet
 {
 private:
@@ -9,7 +10,8 @@ private:
 public:
     Packet();
     Packet(ethheader* ethernetHeader);
-    template<class T>
+
+template<typename T>
     int append(T buffer);
     void * getBuffer();
     int Size;

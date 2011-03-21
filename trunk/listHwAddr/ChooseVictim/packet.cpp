@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+
 Packet::Packet()
 {
     this->Size = 0;
@@ -15,7 +16,7 @@ Packet::Packet(ethheader* ethernetHeader)
     this->Size = sizeof(ethheader);
 }
 
-template<class T>
+template<typename T>
 int Packet::append(T buffer)
 {
     this->buffer = realloc(this->buffer, this->Size + sizeof(T));
