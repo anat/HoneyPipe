@@ -26,6 +26,7 @@ public slots:
     void scan();
     void setDest();
     void setSource();
+    void startSpoofing();
 };
 
 #endif // MAINWINDOW_H

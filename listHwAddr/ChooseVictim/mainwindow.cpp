@@ -43,6 +43,7 @@ uint8_t dst_hwaddr[6];
     QObject::connect(ui->btnScan, SIGNAL(clicked()), this, SLOT(scan()) );
     QObject::connect(ui->pbSetDest, SIGNAL(clicked()), this, SLOT(setDest()));
     QObject::connect(ui->pbSetSource, SIGNAL(clicked()), this, SLOT(setSource()));
+    QObject::connect(ui->pbSpoof, SIGNAL(clicked()), this, SLOT(startSpoofing()));
 }
 
 MainWindow::~MainWindow()
@@ -63,25 +64,17 @@ void MainWindow::fillIps(QString interface)
 void MainWindow::setDest()
 {
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
-    {
         QMessageBox::information(this, "Error", "You must select 1 item");
-    }
     else
-    {
         this->ui->leDest->setText(this->ui->twMain->selectedItems().first()->text());
-    }
 }
 
 void MainWindow::setSource()
 {
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
-    {
         QMessageBox::information(this, "Error", "You must select 1 item");
-    }
     else
-    {
         this->ui->leSource->setText(this->ui->twMain->selectedItems().first()->text());
-    }
 }
 
 void MainWindow::scan()
@@ -137,4 +130,13 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
         this->ui->twMain->setItem(this->nbItem, 1, i);
 
         this->nbItem++;
+}
+
+void MainWindow::startSpoofing()
+{
+    this->ui->leSource->setText("macvictim");
+    this->ui->leDest->setText("macrouter");
+    //this->ui->leSource->text().toStdString().c_str()
+    //this->ui->leDest->text().toStdString().c_str()
+    this->statusText->setText("Spoofing ...");
 }
