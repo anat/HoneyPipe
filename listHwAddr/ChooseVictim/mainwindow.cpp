@@ -7,6 +7,7 @@
 #include <QtGui/QTableWidgetItem>
 #include <QtGui/QStandardItemModel>
 #include <arpa/inet.h>
+#include <net/ethernet.h>
 #include "rawsocket.h"
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -91,7 +92,7 @@ void MainWindow::scan()
             if (addr.ip().toString() == ui->cbIp->currentText())
                 currentIP = addr;
 
-        s.Create(currentInterface.index());
+        s.Create(currentInterface.index(), (uint16_t)ETH_P_ALL);
         unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
         unsigned int netmask = currentIP.netmask().toIPv4Address();
         QNetworkAddressEntry current;
