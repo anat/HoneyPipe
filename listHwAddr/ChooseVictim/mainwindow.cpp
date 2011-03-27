@@ -7,7 +7,7 @@
 #include <QtGui/QTableWidgetItem>
 #include <QtGui/QStandardItemModel>
 #include <arpa/inet.h>
-
+#include "rawsocket.h"
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
@@ -24,8 +24,25 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->ui->twMain->setColumnWidth(0, 200);
     this->ui->twMain->setColumnWidth(1, 250);
+    this->ui->twMain->setSelectionBehavior(QAbstractItemView::SelectRows);
+    this->ui->twMain->setSelectionMode(QAbstractItemView::SingleSelection);
+    this->statusText = new QLabel(this);
+    this->statusText->setText("No scan running");
+    this->ui->sbMain->addPermanentWidget(this->statusText, 200);
+    this->ui->sbMain->show();
+
+
+
+    /* FOR UI DEBUG
+uint8_t dst_hwaddr[6];
+    memset(dst_hwaddr, 0xff, 6);
+    this->addNewItem("Test ", dst_hwaddr);
+*/
+
     QObject::connect(ui->cbInt, SIGNAL(currentIndexChanged(QString)), this, SLOT(fillIps(QString)));
     QObject::connect(ui->btnScan, SIGNAL(clicked()), this, SLOT(scan()) );
+    QObject::connect(ui->pbSetDest, SIGNAL(clicked()), this, SLOT(setDest()));
+    QObject::connect(ui->pbSetSource, SIGNAL(clicked()), this, SLOT(setSource()));
 }
 
 MainWindow::~MainWindow()
@@ -43,9 +60,34 @@ void MainWindow::fillIps(QString interface)
             ui->cbIp->addItem(h.toString());
 }
 
+void MainWindow::setDest()
+{
+    if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
+    {
+        QMessageBox::information(this, "Error", "You must select 1 item");
+    }
+    else
+    {
+        this->ui->leDest->setText(this->ui->twMain->selectedItems().first()->text());
+    }
+}
+
+void MainWindow::setSource()
+{
+    if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
+    {
+        QMessageBox::information(this, "Error", "You must select 1 item");
+    }
+    else
+    {
+        this->ui->leSource->setText(this->ui->twMain->selectedItems().first()->text());
+    }
+}
 
 void MainWindow::scan()
 {
+    RAWSocket s;
+    this->ui->twMain->clear();
     ARPRequest arpr;
     if (ui->cbIp->count() != 0)
     {
@@ -56,40 +98,22 @@ void MainWindow::scan()
             if (addr.ip().toString() == ui->cbIp->currentText())
                 currentIP = addr;
 
-        unsigned int networkAddr = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
-        QNetworkAddressEntry qae;
-        qae.setIp(QHostAddress(networkAddr));
-        QMessageBox::information(this,"test",QString::number(currentIP.netmask().toIPv4Address()));
-        //int dst_ip = 0xfe00a8c0;
-        //int dst_ip = 0xf000a8c0;
-
-        unsigned int ip = networkAddr;
+        s.Create(currentInterface.index());
+        unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
         unsigned int netmask = currentIP.netmask().toIPv4Address();
         QNetworkAddressEntry current;
         uint32_t i = 0;
         while ((++i & ~netmask) && (~i & ~netmask))
           {
             ip++;
-
-        //std::cout << htonl(ip) << std::endl;
             current.setIp(QHostAddress(ip));
-            std::cout << "Test " << current.ip().toString().toStdString() << std::endl;
-            uint8_t * rep = arpr.doRequest(currentInterface, currentIP.ip().toIPv4Address(), htonl(ip));
+            this->statusText->setText("Scan is running - " + current.ip().toString());
+            uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip));
             if (rep != NULL)
-            {
-                printf("Found MAC : (%x:%x:%x:%x:%x:%x)\n",
-                    rep[0], rep[1], rep[2],
-                    rep[3], rep[4], rep[5]);
                 this->addNewItem(current.ip().toString(), rep);
-            }
             QCoreApplication::processEvents();
-        }
-
-
-        //this->ui->tableWidget->
-      //      std::cout << "failed !!!" << std::endl;
-       // else
-
+          }
+        this->statusText->setText("Scan done");
 
     }
 
@@ -104,7 +128,6 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
         this->ui->twMain->setItem(this->nbItem, 0, i);
 
         i = new QTableWidgetItem(QStandardItem::UserType);
-        i->setFlags(Qt::ItemIsEditable);
         QString macAddr;
         macAddr += QString::number(mac[0], 16) + ":" + QString::number(mac[1], 16) + ":" + QString::number(mac[2], 16) + ":" +
                    QString::number(mac[3], 16) + ":" +  QString::number(mac[4], 16) + ":" +  QString::number(mac[5], 16);
