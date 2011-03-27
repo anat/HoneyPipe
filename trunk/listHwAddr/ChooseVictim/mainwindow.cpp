@@ -81,8 +81,8 @@ void MainWindow::scan()
                     rep[0], rep[1], rep[2],
                     rep[3], rep[4], rep[5]);
                 this->addNewItem(current.ip().toString(), rep);
-
             }
+            QCoreApplication::processEvents();
         }
 
 
