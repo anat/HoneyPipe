@@ -46,21 +46,10 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
 
     p.append(arp_Header, sizeof(arpheader));
 
-
-    std::cout << "Writing : " << p.Size << std::endl;
-    if (write(s.Handler, p.getBuffer(), p.Size) == -1)
+    if (s.Write(p) == -1)
         return 0;
 
-
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(s.Handler, &rfds);
-
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 50000; // 100 ms
-
-    int retval = select(s.Handler + 1, &rfds, NULL, NULL, &timeout);
+    int retval = s.Poll(50000);
     if (retval == -1)
     {
         perror("Failure");
@@ -68,7 +57,7 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
     }
     else if (retval)
     {
-        if (read(s.Handler, p.getBuffer(), p.Size) == (sizeof(ethheader) + sizeof(arpheader)))
+        if (s.Read(p) == (sizeof(ethheader) + sizeof(arpheader)))
         {
             arp_Header = (arpheader*)(((char *)p.getBuffer()) + sizeof(ethheader));
             if (arp_Header->ar_op != htons(ARP_REPLY))
@@ -86,7 +75,6 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
         }
         else
         {
-            std::cout << "failed" << std::endl;
             return 0;
         }
     }
@@ -96,8 +84,6 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
     //struct timezone tz;
     //gettimeofday(&tv, &tz);
     //std::cout << tv.tv_usec << std::endl;
-
-    std::cout << "Timeout" << std::endl;
     return 0;
 
 }

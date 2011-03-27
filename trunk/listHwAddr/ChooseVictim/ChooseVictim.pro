@@ -21,6 +21,7 @@ HEADERS  += mainwindow.h \
     arp.h \
     eth.h \
     packet.h \
-    rawsocket.h
+    rawsocket.h \
+    IProtocol.hpp
 
 FORMS    += mainwindow.ui
