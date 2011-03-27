@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <stdint.h>
 
 namespace Ui {
     class MainWindow;
@@ -17,6 +18,8 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    int nbItem;
+    void	addNewItem(QString const & ip, uint8_t * mac);
 
 public slots:
     void fillIps(QString interface);

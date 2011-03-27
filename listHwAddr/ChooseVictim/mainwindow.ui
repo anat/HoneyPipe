@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>478</width>
-    <height>481</height>
+    <width>503</width>
+    <height>553</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,7 +64,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>130</y>
+      <y>120</y>
       <width>98</width>
       <height>27</height>
      </rect>
@@ -73,13 +73,48 @@
      <string>Scan</string>
     </property>
    </widget>
+   <widget class="QTableWidget" name="twMain">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>170</y>
+      <width>452</width>
+      <height>331</height>
+     </rect>
+    </property>
+    <property name="baseSize">
+     <size>
+      <width>0</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="rowCount">
+     <number>0</number>
+    </property>
+    <property name="columnCount">
+     <number>2</number>
+    </property>
+    <attribute name="horizontalHeaderDefaultSectionSize">
+     <number>100</number>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>IP</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>MAC</string>
+     </property>
+    </column>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>478</width>
+     <width>503</width>
      <height>25</height>
     </rect>
    </property>
