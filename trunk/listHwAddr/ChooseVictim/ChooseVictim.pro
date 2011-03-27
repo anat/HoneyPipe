@@ -13,12 +13,14 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     arprequest.cpp \
-    packet.cpp
+    packet.cpp \
+    rawsocket.cpp
 
 HEADERS  += mainwindow.h \
     arprequest.h \
     arp.h \
     eth.h \
-    packet.h
+    packet.h \
+    rawsocket.h
 
 FORMS    += mainwindow.ui

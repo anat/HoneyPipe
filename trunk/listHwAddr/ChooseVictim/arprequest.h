@@ -6,7 +6,7 @@
 #include "arp.h"
 #include "eth.h"
 #include <string>
-
+#include "rawsocket.h"
 struct pack
 {
   ethheader eth_head;
@@ -18,7 +18,7 @@ class ARPRequest
 {
 public:
     ARPRequest();
-    uint8_t* doRequest(QNetworkInterface const & interface, int src_ip, int dst_ip);
+    uint8_t* doRequest(RAWSocket & s, QNetworkInterface const & interface, int src_ip, int dst_ip);
 private:
     arpheader* craftARP(arpheader *arp,
                    uint8_t *srcmac, uint8_t *srcip,

@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <stdint.h>
-
+#include <QtGui/QLabel>
 namespace Ui {
     class MainWindow;
 }
@@ -15,7 +15,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
+    QLabel* statusText;
 private:
     Ui::MainWindow *ui;
     int nbItem;
@@ -24,6 +24,8 @@ private:
 public slots:
     void fillIps(QString interface);
     void scan();
+    void setDest();
+    void setSource();
 };
 
 #endif // MAINWINDOW_H

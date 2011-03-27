@@ -12,47 +12,26 @@
 #include "packet.h"
 #include <sys/select.h>
 #include <sys/time.h>
-
+#include "rawsocket.h"
 ARPRequest::ARPRequest()
 {
 
 }
 
-uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, int dst_ip)
+uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interface, int src_ip, int dst_ip)
 {
     uint8_t* foundMAC = new uint8_t[6];
     uint8_t src_hwaddr[6], dst_hwaddr[6];
-    int rsock;
     //struct pack packet;
-
-    std::cout << "Creating socket" << std::endl;
-    if ((rsock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1)
-        return 0;
 
 
     struct ifreq ifr;
     strncpy(ifr.ifr_name, interface.humanReadableName().toAscii(), IFNAMSIZ);
-    if (ioctl(rsock, SIOCGIFHWADDR, &ifr) == -1)
+    if (ioctl(s.Handler, SIOCGIFHWADDR, &ifr) == -1)
         return 0;
     memcpy((char *)src_hwaddr, ((struct sockaddr *)&ifr.ifr_hwaddr)->sa_data, 6);
 
-
-
-    struct sockaddr_ll sll;
-
-    sll.sll_family = AF_PACKET;
-    sll.sll_protocol = htons(ETH_P_ALL);
-    sll.sll_ifindex = interface.index();
-    std::cout << "Binding" << std::endl;
-    if (bind(rsock, (struct sockaddr *) &sll, sizeof(struct sockaddr_ll)) == -1)
-    {
-        std::cout << "Couldn't bind !" << std::endl;
-        return 0;
-    }
-
     memset(dst_hwaddr, 0xff, 6);
-
-
 
     ethheader eth_Header;
     arpheader* arp_Header = new arpheader();
@@ -69,19 +48,19 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
 
 
     std::cout << "Writing : " << p.Size << std::endl;
-    if (write(rsock, p.getBuffer(), p.Size) == -1)
+    if (write(s.Handler, p.getBuffer(), p.Size) == -1)
         return 0;
 
 
     fd_set rfds;
     FD_ZERO(&rfds);
-    FD_SET(rsock, &rfds);
+    FD_SET(s.Handler, &rfds);
 
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 50000; // 100 ms
 
-    int retval = select(rsock + 1, &rfds, NULL, NULL, &timeout);
+    int retval = select(s.Handler + 1, &rfds, NULL, NULL, &timeout);
     if (retval == -1)
     {
         perror("Failure");
@@ -89,9 +68,8 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
     }
     else if (retval)
     {
-        if (read(rsock, p.getBuffer(), p.Size) == (sizeof(ethheader) + sizeof(arpheader)))
+        if (read(s.Handler, p.getBuffer(), p.Size) == (sizeof(ethheader) + sizeof(arpheader)))
         {
-            close(rsock);
             arp_Header = (arpheader*)(((char *)p.getBuffer()) + sizeof(ethheader));
             if (arp_Header->ar_op != htons(ARP_REPLY))
             {
@@ -109,7 +87,6 @@ uint8_t* ARPRequest::doRequest(QNetworkInterface const & interface, int src_ip, 
         else
         {
             std::cout << "failed" << std::endl;
-            close(rsock);
             return 0;
         }
     }
