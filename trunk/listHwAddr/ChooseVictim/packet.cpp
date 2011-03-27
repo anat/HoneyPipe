@@ -16,15 +16,6 @@ Packet::Packet(ethheader* ethernetHeader)
     this->Size = sizeof(ethheader);
 }
 
-template<typename T>
-int Packet::append(T buffer)
-{
-    this->buffer = realloc(this->buffer, this->Size + sizeof(T));
-    memcpy(this->buffer + this->Size, buffer, sizeof(T));
-    this->Size += sizeof(T);
-    return this->Size;
-}
-
 void * Packet::getBuffer()
 {
     return this->buffer;
