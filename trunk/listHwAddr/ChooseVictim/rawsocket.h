@@ -12,8 +12,8 @@ public:
     ~RAWSocket();
     int Handler;
     bool Create(int index, uint16_t protocol);
-    int Read(Packet & p);
-    int Write(Packet & p, bool create = false);
+    int Read(Packet & p, bool create = false);
+    int Write(Packet & p);
     int Poll(int timeout);
 private:
     fd_set rfds;

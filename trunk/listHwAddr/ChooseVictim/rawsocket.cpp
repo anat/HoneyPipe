@@ -36,12 +36,22 @@ bool RAWSocket::Create(int index, uint16_t protocol)
     return true;
 }
 
-int RAWSocket::Read(Packet & p)
+int RAWSocket::Read(Packet & p, bool create)
 {
-    return recv(this->Handler, p.getBuffer(), p.Size, 0);
+    if (create)
+    {
+        char buffer[65536];
+        int ret = recv(this->Handler, buffer, 65536, 0);
+        if (ret == 0 || ret == -1)
+            std::cerr << "LOL" << std::endl;
+        p.append(buffer, ret);
+        return ret;
+    }
+    else
+        return recv(this->Handler, p.getBuffer(), p.Size, 0);
 }
 
-int RAWSocket::Write(Packet & p, bool create)
+int RAWSocket::Write(Packet & p)
 {
     return send(this->Handler, p.getBuffer(), p.Size, 0);
 }

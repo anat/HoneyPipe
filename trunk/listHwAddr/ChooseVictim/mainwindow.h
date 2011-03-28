@@ -8,6 +8,12 @@ namespace Ui {
     class MainWindow;
 }
 
+typedef enum state{
+    Scanning = 1,
+    Spoofing = 2,
+    Playing = 4
+          } HoneyPipeState;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,6 +25,9 @@ public:
 private:
     Ui::MainWindow *ui;
     int nbItem;
+    QMainWindow * currentProtocol;
+    int state;
+    int currentHWIndex;
     void	addNewItem(QString const & ip, uint8_t * mac);
 
 public slots:
@@ -27,6 +36,7 @@ public slots:
     void setDest();
     void setSource();
     void startSpoofing();
+    void play();
 };
 
 #endif // MAINWINDOW_H

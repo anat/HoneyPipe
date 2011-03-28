@@ -4,6 +4,7 @@
 # include "arp.h"
 #include <stdlib.h>
 #include <iostream>
+#include <string.h>
 
 class Packet
 {
