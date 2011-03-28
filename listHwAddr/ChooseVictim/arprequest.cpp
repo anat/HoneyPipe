@@ -13,6 +13,8 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include "rawsocket.h"
+#include <stdlib.h>
+
 ARPRequest::ARPRequest()
 {
 
@@ -22,8 +24,6 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
 {
     uint8_t* foundMAC = new uint8_t[6];
     uint8_t src_hwaddr[6], dst_hwaddr[6];
-    //struct pack packet;
-
 
     struct ifreq ifr;
     strncpy(ifr.ifr_name, interface.humanReadableName().toAscii(), IFNAMSIZ);

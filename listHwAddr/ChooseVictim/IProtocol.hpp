@@ -2,10 +2,12 @@
 #define IPROTOCOL_HPP
 
 
-
+#include "packet.h"
 class   IProtocol
 {
-    virtual bool isProtocol();
+public:
+    virtual bool isProtocol(Packet & packet) = 0;
+    virtual ~IProtocol() {}
 };
 
 #endif // IPROTOCOL_HPP
