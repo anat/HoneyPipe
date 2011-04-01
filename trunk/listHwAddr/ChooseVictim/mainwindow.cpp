@@ -22,11 +22,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     foreach(QNetworkInterface iter, QNetworkInterface::allInterfaces())
-    {
         if(iter.isValid())
             if (!iter.hardwareAddress().isEmpty())
+            {
                 ui->cbInt->addItem(iter.humanReadableName());
-    }
+                if (iter.humanReadableName() == "eth0")
+                    ui->cbInt->setEditText("eth0");
+            }
+     int idx = ui->cbInt->findText("eth0");
+     if (idx != -1)
+     {
+         ui->cbInt->setCurrentIndex(idx);
+         fillIps("eth0");
+     }
 
     this->ui->twMain->setColumnWidth(0, 200);
     this->ui->twMain->setColumnWidth(1, 250);
@@ -65,7 +73,7 @@ void MainWindow::fillIps(QString interface)
 {
     ui->cbIp->clear();
     foreach (QHostAddress h, QNetworkInterface::interfaceFromName(interface).allAddresses())
-        if (h.protocol() == QAbstractSocket::IPv4Protocol)
+        if (h.protocol() == QAbstractSocket::IPv4Protocol && h.toString() != "127.0.0.1")
             ui->cbIp->addItem(h.toString());
 }
 
@@ -142,9 +150,7 @@ void MainWindow::play()
                     {
                         std::cout << "Bonne taille" << std::endl;
                     }
-
                     //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
-
                 }
                 //p.getBuffer()
             }
@@ -230,9 +236,7 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
                QString::number(mac[3], 16) + ":" +  QString::number(mac[4], 16) + ":" +  QString::number(mac[5], 16);
     i->setText(macAddr);
     i->setToolTip(macAddr);
-
     this->ui->twMain->setItem(this->nbItem, 1, i);
-
     this->nbItem++;
 }
 
@@ -244,7 +248,6 @@ void MainWindow::startSpoofing()
         this->ui->pbSpoof->setText("Start Spoofing");
         this->state -= Spoofing;
         system("pkill fwdPacket");
-
     }
     else
     {
