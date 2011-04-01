@@ -102,6 +102,14 @@ void MainWindow::play()
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);
         Packet p;
+
+        u_int32_t ipsrc, ipdst;
+        QHostAddress tmp;
+        tmp.setAddress(this->ui->leSourceIP->text());
+        ipsrc = htonl(tmp.toIPv4Address());
+        tmp.setAddress(this->ui->leRouterIP->text());
+        ipdst = htonl(tmp.toIPv4Address());
+
         while (this->state & Playing)
         {
             // poll each ms
@@ -111,15 +119,26 @@ void MainWindow::play()
                 std::cout << "Packet received : " << p.Size << std::endl;
                 ip* pIP = (ip*)p.getBuffer();
                 //std::cout << (int)pIP->ip_p << std::endl;
-                if (pIP->isTCP() && pIP)
+
+                if (pIP->isTCP())
                 {
                     tcp* pTCP = (tcp*)p.getBuffer();
+                    std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+                    if (pIP->ip_dst == ipdst && pIP->ip_src == ipsrc)
+                    {
+
+                    }
+                    else if (pIP->ip_dst == ipsrc && pIP->ip_src == ipdst)
+                    {
+
+                    }
+
                     if (pTCP->ip_len == p.Size - sizeof(tcp))
                     {
                         std::cout << "Bonne taille" << std::endl;
                     }
-                    std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
-                    write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
+
+                    //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
 
                 }
                 //p.getBuffer()
@@ -142,10 +161,13 @@ void MainWindow::scan()
 {
     if (this->state & Scanning)
     {
+        this->ui->btnScan->setText("Scan");
         this->state -= Scanning;
     }
     else
     {
+        this->ui->btnScan->setText("Stop scan");
+        this->statusText->setText("Start scanning ...");
         this->state |= Scanning;
         RAWSocket s;
         this->ui->twMain->clearContents();
