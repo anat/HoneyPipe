@@ -17,6 +17,8 @@ public:
     explicit Netsoul(QWidget *parent = 0);
     ~Netsoul();
     virtual bool isProtocol(Packet & p);
+    int sendTargetAToTargetB();
+    int sendTargetBToTargetA();
 private:
     Ui::Netsoul *ui;
 };

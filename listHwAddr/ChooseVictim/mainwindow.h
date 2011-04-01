@@ -22,6 +22,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     QLabel* statusText;
+    uint32_t deltaBToA;
+    uint32_t deltaAToB;
 private:
     Ui::MainWindow *ui;
     int nbItem;
