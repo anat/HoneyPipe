@@ -56,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+    system("pkill fwdPacket");
 }
 
 
@@ -237,30 +238,33 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 
 void MainWindow::startSpoofing()
 {
-  //this->ui->leSource->setText("macvictim");
-  //this->ui->leDest->setText("macrouter");
-  //printf("%s\n", this->ui->leSource->text().toStdString().c_str());
-  //this->ui->leDest->text().toStdString().c_str()
-  this->statusText->setText("Spoofing ...");
+    if (this->state & Spoofing)
+    {
+        this->statusText->setText("Spoofing stopped");
+        this->ui->pbSpoof->setText("Start Spoofing");
+        this->state -= Spoofing;
+        system("pkill fwdPacket");
 
-  if (!fork())
-    execl("./fwdPacket", "./fwdPacket",
-	  ui->cbInt->currentText().toStdString().c_str(),
-	  "192.168.0.4",
-	  this->ui->leSourceMAC->text().toStdString().c_str(),
-	  "192.168.0.254",
-	  (char*)NULL);
+    }
+    else
+    {
+        this->ui->pbSpoof->setText("Stop spoofing");
+        this->state |= Spoofing;
+        this->statusText->setText("Spoofing ...");
+        if (!fork())
+            execl("./fwdPacket", "./fwdPacket",
+                  ui->cbInt->currentText().toStdString().c_str(),
+                  this->ui->leSourceIP->text().toStdString().c_str(),
+                  this->ui->leSourceMAC->text().toStdString().c_str(),
+                  this->ui->leRouterIP->text().toStdString().c_str(),
+                  (char*)NULL);
 
-  if (!fork())
-    execl("./fwdPacket", "./fwdPacket",
-	  ui->cbInt->currentText().toStdString().c_str(),
-	  "192.168.0.254",
-	  this->ui->leRouterMAC->text().toStdString().c_str(),
-	  "192.168.0.4",
-	  (char*)NULL);
-}
-
-void MainWindow::close()
-{
-    system("pkill fwdPacket");
+        if (!fork())
+            execl("./fwdPacket", "./fwdPacket",
+                  ui->cbInt->currentText().toStdString().c_str(),
+                  this->ui->leRouterIP->text().toStdString().c_str(),
+                  this->ui->leRouterMAC->text().toStdString().c_str(),
+                  this->ui->leSourceIP->text().toStdString().c_str(),
+                  (char*)NULL);
+    }
 }
