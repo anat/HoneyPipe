@@ -126,11 +126,12 @@ void MainWindow::play()
                     std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
                     if (pIP->ip_dst == ipdst && pIP->ip_src == ipsrc)
                     {
-
+                        // from "client" to "router"
                     }
                     else if (pIP->ip_dst == ipsrc && pIP->ip_src == ipdst)
                     {
-
+                        // from "router" to "client"
+                        write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                     }
 
                     if (pTCP->ip_len == p.Size - sizeof(tcp))
