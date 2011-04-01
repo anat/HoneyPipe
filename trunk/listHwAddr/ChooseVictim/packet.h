@@ -54,6 +54,15 @@ struct arp : public eth
 };
 
 
+//enum {
+ // IPPROTO_IP = 0,               /* Dummy protocol for TCP               */
+//  IPPROTO_ICMP = 1,             /* Internet Control Message Protocol    */
+//  IPPROTO_TCP = 6,              /* Transmission Control Protocol        */
+ // IPPROTO_UDP = 17,             /* User Datagram Protocol               */
+ // IPPROTO_RAW = 255,         /* Raw IP packets                       */
+ // IPPROTO_MAX
+//};
+
 
 struct ip : public eth
 {
@@ -68,34 +77,14 @@ struct ip : public eth
   uint16_t ip_sum;
   uint32_t ip_src;
   uint32_t ip_dst;
+  bool isTCP() {return (this->ip_p == IPPROTO_TCP);}
   void craftIP();
 };
 
-typedef u_int32_t tcp_seq;
+
+
 
 struct tcp : ip
-  {
-    u_int16_t th_sport;
-    u_int16_t th_dport;
-    tcp_seq th_seq;
-    tcp_seq th_ack;
-    u_int8_t th_x2:4;
-    u_int8_t th_off:4;
-    u_int8_t th_flags;
-#  define TH_FIN        0x01
-#  define TH_SYN        0x02
-#  define TH_RST        0x04
-#  define TH_PUSH       0x08
-#  define TH_ACK        0x10
-#  define TH_URG        0x20
-    u_int16_t th_win;
-    u_int16_t th_sum;
-    u_int16_t th_urp;
-    void craftTCP();
-};
-
-/*
-struct tcphdr : ip
   {
     u_int16_t source;
     u_int16_t dest;
@@ -113,8 +102,9 @@ struct tcphdr : ip
     u_int16_t window;
     u_int16_t check;
     u_int16_t urg_ptr;
+    void craftTCP();
 };
-*/
+
 
 
 #endif // PACKET_H
