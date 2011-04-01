@@ -231,9 +231,25 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 
 void MainWindow::startSpoofing()
 {
-    this->ui->leSourceMAC->setText("macvictim");
-    this->ui->leRouterMAC->setText("macrouter");
-    //this->ui->leSource->text().toStdString().c_str()
-    //this->ui->leDest->text().toStdString().c_str()
-    this->statusText->setText("Spoofing ...");
+  //this->ui->leSource->setText("macvictim");
+  //this->ui->leDest->setText("macrouter");
+  //printf("%s\n", this->ui->leSource->text().toStdString().c_str());
+  //this->ui->leDest->text().toStdString().c_str()
+  this->statusText->setText("Spoofing ...");
+
+  if (!fork())
+    execl("./fwdPacket", "./fwdPacket",
+	  ui->cbInt->currentText().toStdString().c_str(),
+	  "192.168.0.4",
+	  this->ui->leSourceMAC->text().toStdString().c_str(),
+	  "192.168.0.254",
+	  (char*)NULL);
+
+  if (!fork())
+    execl("./fwdPacket", "./fwdPacket",
+	  ui->cbInt->currentText().toStdString().c_str(),
+	  "192.168.0.254",
+	  this->ui->leRouterMAC->text().toStdString().c_str(),
+	  "192.168.0.4",
+	  (char*)NULL);
 }
