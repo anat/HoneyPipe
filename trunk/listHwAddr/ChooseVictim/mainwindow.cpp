@@ -11,6 +11,7 @@
 #include "rawsocket.h"
 #include "netsoul.h"
 #include <unistd.h>
+#include "rsock.h"
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -25,16 +26,16 @@ MainWindow::MainWindow(QWidget *parent) :
         if(iter.isValid())
             if (!iter.hardwareAddress().isEmpty())
             {
-                ui->cbInt->addItem(iter.humanReadableName());
-                if (iter.humanReadableName() == "eth0")
-                    ui->cbInt->setEditText("eth0");
-            }
-     int idx = ui->cbInt->findText("eth0");
-     if (idx != -1)
-     {
-         ui->cbInt->setCurrentIndex(idx);
-         fillIps("eth0");
-     }
+        ui->cbInt->addItem(iter.humanReadableName());
+        if (iter.humanReadableName() == "eth0")
+            ui->cbInt->setEditText("eth0");
+    }
+    int idx = ui->cbInt->findText("eth0");
+    if (idx != -1)
+    {
+        ui->cbInt->setCurrentIndex(idx);
+        fillIps("eth0");
+    }
 
     this->ui->twMain->setColumnWidth(0, 200);
     this->ui->twMain->setColumnWidth(1, 250);
@@ -113,12 +114,17 @@ void MainWindow::play()
         s.Create(this->currentHWIndex, ETH_P_IP);
         Packet p;
 
-        u_int32_t ipsrc, ipdst;
+        u_int32_t ipA, ipB;
         QHostAddress tmp;
         tmp.setAddress(this->ui->leSourceIP->text());
-        ipsrc = htonl(tmp.toIPv4Address());
+        ipA = htonl(tmp.toIPv4Address());
         tmp.setAddress(this->ui->leRouterIP->text());
-        ipdst = htonl(tmp.toIPv4Address());
+        ipB = htonl(tmp.toIPv4Address());
+        uint8_t macA[6], macB[6], mymac[6];
+
+        mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), (uint8_t *)macA);
+        mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), (uint8_t *)macB);
+        mactoa((char*)QNetworkInterface::interfaceFromName(ui->cbInt->currentText()).hardwareAddress().toStdString().c_str(), mymac);
 
         while (this->state & Playing)
         {
@@ -127,31 +133,66 @@ void MainWindow::play()
             {
                 s.Read(p, true);
                 std::cout << "Packet received : " << p.Size << std::endl;
-                ip* pIP = (ip*)p.getBuffer();
-                //std::cout << (int)pIP->ip_p << std::endl;
-
-                if (pIP->isTCP())
+                eth* pETH = (eth*)p.getBuffer();
+                if (p.Size > sizeof(ip))
                 {
-                    tcp* pTCP = (tcp*)p.getBuffer();
-                    std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
-                    if (pIP->ip_dst == ipdst && pIP->ip_src == ipsrc)
+                    ip* pIP = (ip*)p.getBuffer();
+                    //std::cout << (int)pIP->ip_p << std::endl;
+
+                    if (pIP->ip_dst == ipB && pIP->ip_src == ipA)
                     {
                         // from "client" to "router"
-                        std::cout << "client talk" << std::endl;
+                        if (pIP->isTCP())
+                        {
+                            std::cout << "client talk" << std::endl;
+                            tcp* pTCP = (tcp*)p.getBuffer();
+                            std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+
+
+                            if (pTCP->ip_len == p.Size - sizeof(tcp))
+                                std::cout << "Bonne taille" << std::endl;
+
+                        }
+                        //memcpy(pETH->ar_tha, macB, 6);
+                        //memcpy(pETH->ar_sha, mymac, 6);
                     }
-                    else if (pIP->ip_dst == ipsrc && pIP->ip_src == ipdst)
+                    else if (pIP->ip_dst == ipA && pIP->ip_src == ipB)
                     {
                         // from "router" to "client"
-                        std::cout << "router talk" << std::endl;
-                        write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
-                    }
+                        if (pIP->isTCP())
+                        {
+                            std::cout << "router talk" << std::endl;
+                            tcp* pTCP = (tcp*)p.getBuffer();
+                            std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
 
-                    if (pTCP->ip_len == p.Size - sizeof(tcp))
-                    {
-                        std::cout << "Bonne taille" << std::endl;
+                            if (pTCP->ip_len == p.Size - sizeof(tcp))
+                                std::cout << "Bonne taille" << std::endl;
+
+
+                            write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
+                        }
+                        //memcpy(pETH->ar_tha, macA, 6);
+                        //memcpy(pETH->ar_sha, mymac, 6);
                     }
-                    //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                 }
+
+                if (memcmp(pETH->ar_tha, mymac, 6) == 0 && (pETH->ar_sha, macA) == 0)
+                {
+                    memcpy(pETH->ar_tha, macB, 6);
+                    memcpy(pETH->ar_sha, mymac, 6);
+                }
+                else if (memcmp(pETH->ar_tha, mymac, 6) == 0 && (pETH->ar_sha, macB) == 0)
+                {
+                    memcpy(pETH->ar_tha, macA, 6);
+                    memcpy(pETH->ar_sha, mymac, 6);
+                }
+
+                //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
+
+
+
+
+                s.Write(p);
                 //p.getBuffer()
             }
             QCoreApplication::processEvents();
