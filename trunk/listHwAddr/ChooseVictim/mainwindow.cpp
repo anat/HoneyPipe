@@ -39,9 +39,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     // FOR UI DEBUG
-    uint8_t dst_hwaddr[6];
-    memset(dst_hwaddr, 0xff, 6);
-    this->addNewItem("Test ", dst_hwaddr);
+    //uint8_t dst_hwaddr[6];
+    //memset(dst_hwaddr, 0xff, 6);
+    //this->addNewItem("Test ", dst_hwaddr);
 
 
     QObject::connect(ui->cbInt, SIGNAL(currentIndexChanged(QString)), this, SLOT(fillIps(QString)));
@@ -50,6 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->pbSetSource, SIGNAL(clicked()), this, SLOT(setSource()));
     QObject::connect(ui->pbSpoof, SIGNAL(clicked()), this, SLOT(startSpoofing()));
     QObject::connect(ui->pbPlay, SIGNAL(clicked()), this, SLOT(play()));
+    QObject::connect(this, SIGNAL(destroyed()), this, SLOT(close()));
 }
 
 MainWindow::~MainWindow()
@@ -127,10 +128,12 @@ void MainWindow::play()
                     if (pIP->ip_dst == ipdst && pIP->ip_src == ipsrc)
                     {
                         // from "client" to "router"
+                        std::cout << "client talk" << std::endl;
                     }
                     else if (pIP->ip_dst == ipsrc && pIP->ip_src == ipdst)
                     {
                         // from "router" to "client"
+                        std::cout << "router talk" << std::endl;
                         write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                     }
 
@@ -172,6 +175,8 @@ void MainWindow::scan()
         this->state |= Scanning;
         RAWSocket s;
         this->ui->twMain->clearContents();
+        this->ui->twMain->setRowCount(0);
+        this->nbItem = 0;
         ARPRequest arpr;
         if (ui->cbIp->count() != 0)
         {
@@ -192,7 +197,7 @@ void MainWindow::scan()
                 ip++;
                 current.setIp(QHostAddress(ip));
                 this->statusText->setText("Scan is running - " + current.ip().toString());
-                uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip));
+                uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip), this->ui->sbTimeout->value());
                 if (rep != NULL)
                     this->addNewItem(current.ip().toString(), rep);
 
@@ -205,6 +210,7 @@ void MainWindow::scan()
             }
             else
                 this->statusText->setText("Scan aborted");
+            this->ui->btnScan->setText("Scan");
         }
     }
 }
@@ -252,4 +258,9 @@ void MainWindow::startSpoofing()
 	  this->ui->leRouterMAC->text().toStdString().c_str(),
 	  "192.168.0.4",
 	  (char*)NULL);
+}
+
+void MainWindow::close()
+{
+    system("pkill fwdPacket");
 }
