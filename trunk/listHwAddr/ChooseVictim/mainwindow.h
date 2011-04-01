@@ -39,7 +39,6 @@ public slots:
     void setSource();
     void startSpoofing();
     void play();
-    void close();
 };
 
 #endif // MAINWINDOW_H
