@@ -9,6 +9,12 @@ Packet::Packet()
     this->buffer = NULL;
 }
 
+Packet::~Packet()
+{
+    if (this->buffer)
+        free(this->buffer);
+}
+
 void * Packet::getBuffer()
 {
     return this->buffer;

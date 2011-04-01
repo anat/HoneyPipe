@@ -12,6 +12,7 @@ private:
     void *buffer;
 public:
     Packet();
+    ~Packet();
 
     template<typename T>
     int append(T* buffer, int size)
