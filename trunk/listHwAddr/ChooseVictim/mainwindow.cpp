@@ -112,7 +112,7 @@ void MainWindow::play()
         }
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);
-        Packet p;
+
 
         u_int32_t ipA, ipB;
         QHostAddress tmp;
@@ -128,6 +128,7 @@ void MainWindow::play()
 
         while (this->state & Playing)
         {
+            Packet p;
             // poll each ms
             if (s.Poll(1000))
             {
@@ -176,12 +177,12 @@ void MainWindow::play()
                     }
                 }
 
-                if (memcmp(pETH->ar_tha, mymac, 6) == 0 && (pETH->ar_sha, macA) == 0)
+                if (memcmp(pETH->ar_tha, mymac, 6) == 0 && memcmp(pETH->ar_sha, macA, 6) == 0)
                 {
                     memcpy(pETH->ar_tha, macB, 6);
                     memcpy(pETH->ar_sha, mymac, 6);
                 }
-                else if (memcmp(pETH->ar_tha, mymac, 6) == 0 && (pETH->ar_sha, macB) == 0)
+                else if ((memcmp(pETH->ar_tha, mymac, 6) == 0) && (memcmp(pETH->ar_sha, macB, 6) == 0))
                 {
                     memcpy(pETH->ar_tha, macA, 6);
                     memcpy(pETH->ar_sha, mymac, 6);
