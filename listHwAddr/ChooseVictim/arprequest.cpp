@@ -20,7 +20,7 @@ ARPRequest::ARPRequest()
 
 }
 
-uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interface, int src_ip, int dst_ip)
+uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interface, int src_ip, int dst_ip, int timeout)
 {
     uint8_t* foundMAC = new uint8_t[6];
     uint8_t src_hwaddr[6], dst_hwaddr[6];
@@ -46,7 +46,7 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
     if (s.Write(p) == -1)
         return 0;
 
-    int retval = s.Poll(50000);
+    int retval = s.Poll(timeout * 1000);
     if (retval == -1)
     {
         perror("Failure");
