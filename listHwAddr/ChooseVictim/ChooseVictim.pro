@@ -15,14 +15,16 @@ SOURCES += main.cpp\
     arprequest.cpp \
     packet.cpp \
     rawsocket.cpp \
-    netsoul.cpp
+    netsoul.cpp \
+    rsock.cpp
 
 HEADERS  += mainwindow.h \
     arprequest.h \
     packet.h \
     rawsocket.h \
     IProtocol.hpp \
-    netsoul.h
+    netsoul.h \
+    rsock.h
 
 FORMS    += mainwindow.ui \
     netsoul.ui
