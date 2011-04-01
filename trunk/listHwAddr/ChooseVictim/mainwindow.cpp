@@ -10,6 +10,7 @@
 #include <net/ethernet.h>
 #include "rawsocket.h"
 #include "netsoul.h"
+#include <unistd.h>
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -98,11 +99,24 @@ void MainWindow::play()
         Packet p;
         while (this->state & Playing)
         {
+            // poll each ms
+            if (s.Poll(1000))
+            {
+
             s.Read(p, true);
+            std::cout << "Packet received : " << p.Size << std::endl;
+
+            //p.getBuffer()
+        }
+            QCoreApplication::processEvents();
+            QCoreApplication::sendPostedEvents(NULL, 0);
+            usleep(1000); // sleep 1ms
+         /*
             if (static_cast<Netsoul*>(this->currentProtocol)->isProtocol(p))
             {;
             }
-            s.Write(p);
+            */
+            //s.Write(p);
         }
     }
 

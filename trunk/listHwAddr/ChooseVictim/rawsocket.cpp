@@ -38,6 +38,7 @@ bool RAWSocket::Create(int index, uint16_t protocol)
 
 int RAWSocket::Read(Packet & p, bool create)
 {
+    int rec;
     if (create)
     {
         char buffer[65536];
@@ -48,12 +49,16 @@ int RAWSocket::Read(Packet & p, bool create)
         return ret;
     }
     else
-        return recv(this->Handler, p.getBuffer(), p.Size, 0);
+        rec = recv(this->Handler, p.getBuffer(), p.Size, 0);
+    std::cout << "Size Received = " << rec << std::endl;
+        return rec;
 }
 
 int RAWSocket::Write(Packet & p)
 {
-    return send(this->Handler, p.getBuffer(), p.Size, 0);
+    int rec = send(this->Handler, p.getBuffer(), p.Size, 0);
+    std::cout << "Size Sent = " << rec << std::endl;
+    return rec;
 }
 
 int RAWSocket::Poll(int timeout)
@@ -64,13 +69,12 @@ int RAWSocket::Poll(int timeout)
     FD_ZERO(&this->wfds);
     FD_SET(this->Handler, &(this->wfds));
 
-    std::cout << "HELLO" << std::endl;
     struct timeval t;
     t.tv_sec = 0;
     t.tv_usec = timeout;
     int result;
     if ((result = select(this->Handler + 1, &(this->rfds), NULL/*&(this->wfds)*/, NULL, (timeout == 0 ? NULL : &t))) == -1)
-        std::cerr << "Select ERROR" << std::endl;
+        std::cerr << "poll : Select ERROR" << std::endl;
     std::cout << "poll : " << result << std::endl;
     return FD_ISSET(this->Handler, &(this->rfds));
 }
