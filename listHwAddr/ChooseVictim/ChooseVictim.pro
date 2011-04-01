@@ -19,8 +19,6 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     arprequest.h \
-    arp.h \
-    eth.h \
     packet.h \
     rawsocket.h \
     IProtocol.hpp \
