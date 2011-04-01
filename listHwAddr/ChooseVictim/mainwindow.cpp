@@ -38,7 +38,6 @@ MainWindow::MainWindow(QWidget *parent) :
     this->ui->sbMain->show();
 
 
-
     /* FOR UI DEBUG
 uint8_t dst_hwaddr[6];
     memset(dst_hwaddr, 0xff, 6);
@@ -73,7 +72,7 @@ void MainWindow::setDest()
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
         QMessageBox::information(this, "Error", "You must select 1 item");
     else
-        this->ui->leDest->setText(this->ui->twMain->selectedItems().first()->text());
+        this->ui->leDestMAC->setText(this->ui->twMain->selectedItems().first()->text());
 }
 
 void MainWindow::setSource()
@@ -81,7 +80,7 @@ void MainWindow::setSource()
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
         QMessageBox::information(this, "Error", "You must select 1 item");
     else
-        this->ui->leSource->setText(this->ui->twMain->selectedItems().first()->text());
+        this->ui->leSourceMAC->setText(this->ui->twMain->selectedItems().first()->text());
 }
 
 void MainWindow::play()
@@ -102,12 +101,23 @@ void MainWindow::play()
             // poll each ms
             if (s.Poll(1000))
             {
+                s.Read(p, true);
+                std::cout << "Packet received : " << p.Size << std::endl;
+                ip* pIP = (ip*)p.getBuffer();
+                //std::cout << (int)pIP->ip_p << std::endl;
+                if (pIP->isTCP() && pIP)
+                {
+                    tcp* pTCP = (tcp*)p.getBuffer();
+                   if (pTCP->ip_len == p.Size - sizeof(tcp))
+                    {
+                       std::cout << "Bonne taille" << std::endl;
+                    }
+                   std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+                    write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
 
-            s.Read(p, true);
-            std::cout << "Packet received : " << p.Size << std::endl;
-
+                }
             //p.getBuffer()
-        }
+            }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
             usleep(1000); // sleep 1ms
@@ -150,12 +160,11 @@ void MainWindow::scan()
             uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip));
             if (rep != NULL)
                 this->addNewItem(current.ip().toString(), rep);
+
             QCoreApplication::processEvents();
         }
         this->statusText->setText("Scan done");
-
     }
-
 }
 
 void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
@@ -180,8 +189,8 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 
 void MainWindow::startSpoofing()
 {
-    this->ui->leSource->setText("macvictim");
-    this->ui->leDest->setText("macrouter");
+    this->ui->leSourceMAC->setText("macvictim");
+    this->ui->leDestMAC->setText("macrouter");
     //this->ui->leSource->text().toStdString().c_str()
     //this->ui->leDest->text().toStdString().c_str()
     this->statusText->setText("Spoofing ...");

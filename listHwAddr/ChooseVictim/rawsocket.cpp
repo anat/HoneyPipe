@@ -75,7 +75,7 @@ int RAWSocket::Poll(int timeout)
     int result;
     if ((result = select(this->Handler + 1, &(this->rfds), NULL/*&(this->wfds)*/, NULL, (timeout == 0 ? NULL : &t))) == -1)
         std::cerr << "poll : Select ERROR" << std::endl;
-    std::cout << "poll : " << result << std::endl;
+    //std::cout << "poll : " << result << std::endl;
     return FD_ISSET(this->Handler, &(this->rfds));
 }
 
