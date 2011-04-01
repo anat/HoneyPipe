@@ -38,11 +38,11 @@ MainWindow::MainWindow(QWidget *parent) :
     this->ui->sbMain->show();
 
 
-    /* FOR UI DEBUG
-uint8_t dst_hwaddr[6];
+    // FOR UI DEBUG
+    uint8_t dst_hwaddr[6];
     memset(dst_hwaddr, 0xff, 6);
     this->addNewItem("Test ", dst_hwaddr);
-*/
+
 
     QObject::connect(ui->cbInt, SIGNAL(currentIndexChanged(QString)), this, SLOT(fillIps(QString)));
     QObject::connect(ui->btnScan, SIGNAL(clicked()), this, SLOT(scan()) );
@@ -72,7 +72,10 @@ void MainWindow::setDest()
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
         QMessageBox::information(this, "Error", "You must select 1 item");
     else
-        this->ui->leDestMAC->setText(this->ui->twMain->selectedItems().first()->text());
+    {
+        this->ui->leRouterIP->setText(this->ui->twMain->item(this->ui->twMain->selectedItems().first()->row(), 0)->text());
+        this->ui->leRouterMAC->setText(this->ui->twMain->item(this->ui->twMain->selectedItems().first()->row(), 1)->text());
+    }
 }
 
 void MainWindow::setSource()
@@ -80,7 +83,10 @@ void MainWindow::setSource()
     if (this->ui->twMain->selectedItems().count() == 0 || this->ui->twMain->selectedItems().count() > 1)
         QMessageBox::information(this, "Error", "You must select 1 item");
     else
-        this->ui->leSourceMAC->setText(this->ui->twMain->selectedItems().first()->text());
+    {
+        this->ui->leSourceIP->setText(this->ui->twMain->item(this->ui->twMain->selectedItems().first()->row(), 0)->text());
+        this->ui->leSourceMAC->setText(this->ui->twMain->item(this->ui->twMain->selectedItems().first()->row(), 1)->text());
+    }
 }
 
 void MainWindow::play()
@@ -108,20 +114,20 @@ void MainWindow::play()
                 if (pIP->isTCP() && pIP)
                 {
                     tcp* pTCP = (tcp*)p.getBuffer();
-                   if (pTCP->ip_len == p.Size - sizeof(tcp))
+                    if (pTCP->ip_len == p.Size - sizeof(tcp))
                     {
-                       std::cout << "Bonne taille" << std::endl;
+                        std::cout << "Bonne taille" << std::endl;
                     }
-                   std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+                    std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
                     write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
 
                 }
-            //p.getBuffer()
+                //p.getBuffer()
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
             usleep(1000); // sleep 1ms
-         /*
+            /*
             if (static_cast<Netsoul*>(this->currentProtocol)->isProtocol(p))
             {;
             }
@@ -134,36 +140,49 @@ void MainWindow::play()
 
 void MainWindow::scan()
 {
-    this->state |= Scanning;
-    RAWSocket s;
-    this->ui->twMain->clearContents();
-    ARPRequest arpr;
-    if (ui->cbIp->count() != 0)
+    if (this->state & Scanning)
     {
-        // get interface ip and mask
-        QNetworkInterface currentInterface = QNetworkInterface::interfaceFromName(ui->cbInt->currentText());
-        QNetworkAddressEntry currentIP;
-        foreach (QNetworkAddressEntry addr, currentInterface.addressEntries())
-            if (addr.ip().toString() == ui->cbIp->currentText())
-                currentIP = addr;
-        this->currentHWIndex = currentInterface.index();
-        s.Create(currentInterface.index(), (uint16_t)ETH_P_ALL);
-        unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
-        unsigned int netmask = currentIP.netmask().toIPv4Address();
-        QNetworkAddressEntry current;
-        uint32_t i = 0;
-        while ((++i & ~netmask) && (~i & ~netmask))
+        this->state -= Scanning;
+    }
+    else
+    {
+        this->state |= Scanning;
+        RAWSocket s;
+        this->ui->twMain->clearContents();
+        ARPRequest arpr;
+        if (ui->cbIp->count() != 0)
         {
-            ip++;
-            current.setIp(QHostAddress(ip));
-            this->statusText->setText("Scan is running - " + current.ip().toString());
-            uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip));
-            if (rep != NULL)
-                this->addNewItem(current.ip().toString(), rep);
+            // get interface ip and mask
+            QNetworkInterface currentInterface = QNetworkInterface::interfaceFromName(ui->cbInt->currentText());
+            QNetworkAddressEntry currentIP;
+            foreach (QNetworkAddressEntry addr, currentInterface.addressEntries())
+                if (addr.ip().toString() == ui->cbIp->currentText())
+                    currentIP = addr;
+            this->currentHWIndex = currentInterface.index();
+            s.Create(currentInterface.index(), (uint16_t)ETH_P_ALL);
+            unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
+            unsigned int netmask = currentIP.netmask().toIPv4Address();
+            QNetworkAddressEntry current;
+            uint32_t i = 0;
+            while ((++i & ~netmask) && (~i & ~netmask) && this->state & Scanning)
+            {
+                ip++;
+                current.setIp(QHostAddress(ip));
+                this->statusText->setText("Scan is running - " + current.ip().toString());
+                uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip));
+                if (rep != NULL)
+                    this->addNewItem(current.ip().toString(), rep);
 
-            QCoreApplication::processEvents();
+                QCoreApplication::processEvents();
+            }
+            if (this->state & Scanning)
+            {
+                this->statusText->setText("Scan done");
+                this->state -= Scanning;
+            }
+            else
+                this->statusText->setText("Scan aborted");
         }
-        this->statusText->setText("Scan done");
     }
 }
 
@@ -190,7 +209,7 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 void MainWindow::startSpoofing()
 {
     this->ui->leSourceMAC->setText("macvictim");
-    this->ui->leDestMAC->setText("macrouter");
+    this->ui->leRouterMAC->setText("macrouter");
     //this->ui->leSource->text().toStdString().c_str()
     //this->ui->leDest->text().toStdString().c_str()
     this->statusText->setText("Spoofing ...");
