@@ -142,34 +142,7 @@ void MainWindow::play()
                     ip* pIP = static_cast<ip*>(p.getBuffer());
                     //printf("%x = %x %d\n", pIP->ip_dst, pIP->ip_src, ((char *)&pIP->ip_src)[0]);
                     /*
-                    uint32_t ips = pIP->ip_src;
-                    printf("---\nsrc%d.%d.%d.%d\n",
-                           ((ips >> 24) & 0xff),
-                           ((ips >> 16) & 0xff),
-                           ((ips >> 8) & 0xff),
-                           ((ips >> 0) & 0xff)
-                           );
-                    ips = pIP->ip_dst;
-                    printf("dst %d.%d.%d.%d\n",
-                           ((ips >> 24) & 0xff),
-                           ((ips >> 16) & 0xff),
-                           ((ips >> 8) & 0xff),
-                           ((ips >> 0) & 0xff)
-                           );
-                    ips = ipA;
-                    printf("ipA %d.%d.%d.%d\n",
-                           ((ips >> 24) & 0xff),
-                           ((ips >> 16) & 0xff),
-                           ((ips >> 8) & 0xff),
-                           ((ips >> 0) & 0xff)
-                           );
-                    ips = ipB;
-                    printf("ipB %d.%d.%d.%d\n",
-                           ((ips >> 24) & 0xff),
-                           ((ips >> 16) & 0xff),
-                           ((ips >> 8) & 0xff),
-                           ((ips >> 0) & 0xff)
-                           );
+
                     */
                     if (pIP->ip_src == ipA && pIP->ip_dst != myip)
                     {
@@ -206,6 +179,38 @@ void MainWindow::play()
                         }
                         memcpy(pETH->ar_tha, macA, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
+                    }
+                    else
+                    {
+                        std::cout << "JUNK PACKET" << std::endl;
+                        uint32_t ips = pIP->ip_src;
+                        printf("---\nsrc%d.%d.%d.%d\n",
+                               ((ips >> 24) & 0xff),
+                               ((ips >> 16) & 0xff),
+                               ((ips >> 8) & 0xff),
+                               ((ips >> 0) & 0xff)
+                               );
+                        ips = pIP->ip_dst;
+                        printf("dst %d.%d.%d.%d\n",
+                               ((ips >> 24) & 0xff),
+                               ((ips >> 16) & 0xff),
+                               ((ips >> 8) & 0xff),
+                               ((ips >> 0) & 0xff)
+                               );
+                        ips = ipA;
+                        printf("ipA %d.%d.%d.%d\n",
+                               ((ips >> 24) & 0xff),
+                               ((ips >> 16) & 0xff),
+                               ((ips >> 8) & 0xff),
+                               ((ips >> 0) & 0xff)
+                               );
+                        ips = ipB;
+                        printf("ipB %d.%d.%d.%d\n",
+                               ((ips >> 24) & 0xff),
+                               ((ips >> 16) & 0xff),
+                               ((ips >> 8) & 0xff),
+                               ((ips >> 0) & 0xff)
+                               );
                     }
                 }
 /*
