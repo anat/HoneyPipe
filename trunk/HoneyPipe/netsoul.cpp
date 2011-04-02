@@ -20,27 +20,33 @@ Netsoul::~Netsoul()
 
 bool Netsoul::isProtocol(Packet & p)
 {
+
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
-    int i = 0;
-    tcp* pTCP = (tcp*)p.getBuffer();
 
+    tcp* pTCP = (tcp*)p.getBuffer();
     if (portA && portB)
       {
-	if ((pTCP->source == portA && pTCP->dest == portB) ||
-	    (pTCP->source == portB && pTCP->dest == portA))
+        //return false;
+        if ((pTCP->source == portA && pTCP->dest == portB) ||
+            (pTCP->source == portB && pTCP->dest == portA))
 	  return true;
       }
     else
       {
+        int i = 0;
 	while (begin[i])
-	  if (!strncmp(begin[i], data, strlen(begin[i++])))
+        {
+            std::cout << "test -" << begin[i] << std::endl;
+            if (!strncmp(begin[i], data, strlen(begin[i])))
 	    {
 	      portA = pTCP->source;
 	      portB = pTCP->dest;
-	      write(1, data, p.Size - sizeof(tcp));
+              write(1, data, p.Size - sizeof(tcp));
 	      return true;
 	    }
+            i++;
+         }
       }
     return false;
 }
