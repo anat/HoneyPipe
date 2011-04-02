@@ -151,10 +151,8 @@ void MainWindow::play()
                     ip* pIP = static_cast<ip*>(p.getBuffer());
                     //printf("%x = %x %d\n", pIP->ip_dst, pIP->ip_src, ((char *)&pIP->ip_src)[0]);
 
-                    if (pIP->ip_src == ipA && pIP->ip_dst != myip)
+                    if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
                     {
-
-                        // from "client" to "router"
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "\t\tCLIENT" << std::endl;
@@ -167,14 +165,16 @@ void MainWindow::play()
                             if (isCurrentProtocol)
                                 std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
                             // Process packet
+                            /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
+                                */
                         }
                         else
                              std::cout << "from client not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macB, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
-			s.Write(p);
+                        s.Write(p);
                     }
                     else if (pIP->ip_dst == ipA) // from "router" to "client"
                     {
@@ -189,14 +189,17 @@ void MainWindow::play()
                                 isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
                             if (isCurrentProtocol)
                                 std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                            // Process packet
+                            /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
+                                */
                         }
                         else
                              std::cout << "from router not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macA, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
-			s.Write(p);
+                        s.Write(p);
                     }
                     else
                     {
