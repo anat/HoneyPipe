@@ -30,7 +30,10 @@ bool Netsoul::isProtocol(Packet & p)
         //return false;
         if ((pTCP->source == portA && pTCP->dest == portB) ||
             (pTCP->source == portB && pTCP->dest == portA))
+       {
+            write(1, data, p.Size - sizeof(tcp));
 	  return true;
+      }
       }
     else
       {
