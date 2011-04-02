@@ -3,8 +3,8 @@
 #include <string>
 #include "packet.h"
 Netsoul::Netsoul(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::Netsoul)
+        QMainWindow(parent),
+        ui(new Ui::Netsoul)
 {
     ui->setupUi(this);
 }
@@ -27,14 +27,36 @@ bool Netsoul::isProtocol(Packet & p)
     return false;
 }
 
-// take a packet from A to tamper and return delta
-int Netsoul::sendTargetAToTargetB()
+
+int Netsoul::sendTargetAToTargetB(Packet & p)
 {
+    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+    std::cout << "\t\tRECEIVED" << std::endl;
+    int i = 0;
+    while (data[i] != '\n' && i < p.Size - sizeof(tcp))
+        ;
+    if (data[i] == '\n')
+    {
+        data[i] = 0;
+    }
+    else
+    {
+        std::cout << "Bizarre pas de \n ou fin du buffer" << std::endl;
+    }
+    this->ui->pte->setPlainText(QString(data));
+    //write(1, data, 10);
+    /*
+    if (!strncmp("HTTP/1.1 ", data, 9))
+    {
+        this->ui->pte->setPlainText(data);
+    }
+    */
     return 0;
 }
 
-// take a packet from B to tamper and return delta
-int Netsoul::sendTargetBToTargetA()
+
+int Netsoul::sendTargetBToTargetA(Packet & p)
 {
+
     return 0;
 }

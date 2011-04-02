@@ -48,15 +48,17 @@ int RAWSocket::Read(Packet & p, bool create)
     else
         rec = recv(this->Handler, p.getBuffer(), p.Size, 0);
     if (rec == 0 || rec == -1)
-        std::cerr << "LOL" << std::endl;
-    std::cout << "Size Received = " << rec << std::endl;
+        std::cerr << "recv ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    //std::cout << "Size Received = " << rec << std::endl;
         return rec;
 }
 
 int RAWSocket::Write(Packet & p)
 {
     int rec = send(this->Handler, p.getBuffer(), p.Size, 0);
-    std::cout << "Size Sent = " << rec << std::endl;
+    if (rec == 0 || rec == -1)
+        std::cerr << "send ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    //std::cout << "Size Sent = " << rec << std::endl;
     return rec;
 }
 
@@ -73,8 +75,7 @@ int RAWSocket::Poll(int timeout)
     t.tv_usec = timeout;
     int result;
     if ((result = select(this->Handler + 1, &(this->rfds), NULL/*&(this->wfds)*/, NULL, (timeout == 0 ? NULL : &t))) == -1)
-        std::cerr << "poll : Select ERROR" << std::endl;
-    //std::cout << "poll : " << result << std::endl;
+        std::cerr << "poll : Select ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     return FD_ISSET(this->Handler, &(this->rfds));
 }
 

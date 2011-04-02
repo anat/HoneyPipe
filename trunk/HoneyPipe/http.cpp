@@ -32,3 +32,16 @@ int http::sendTargetBToTargetA(Packet & p)
     }
     return 0;
 }
+
+int http::sendTargetAToTargetB(Packet & p)
+{
+
+    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+    std::cout << "\t\tRECEIVED" << std::endl;
+    write(1, data, 10);
+    if (!strncmp("HTTP/1.1 ", data, 9))
+    {
+        this->ui->pte->setPlainText(data);
+    }
+    return 0;
+}

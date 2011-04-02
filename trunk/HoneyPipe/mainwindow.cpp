@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include "rsock.h"
 #include "http.h"
+#include "IProtocol.hpp"
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -113,7 +114,6 @@ void MainWindow::play()
         }
         else if (this->ui->cbProtocol->currentText() == "Http")
         {
-            http t;
             this->currentProtocol = new http(this->ui->centralWidget);
             this->currentProtocol->show();
         }
@@ -141,6 +141,7 @@ void MainWindow::play()
             // poll each ms
             if (s.Poll(1000))
             {
+                std::cout << "============== New Packet ==============" << std::endl;
                 Packet p;
                 s.Read(p, true);
                 eth* pETH = (eth*)p.getBuffer();
@@ -148,34 +149,37 @@ void MainWindow::play()
                 {
                     ip* pIP = static_cast<ip*>(p.getBuffer());
                     //printf("%x = %x %d\n", pIP->ip_dst, pIP->ip_src, ((char *)&pIP->ip_src)[0]);
-                    /*
 
-                    */
                     if (pIP->ip_src == ipA && pIP->ip_dst != myip)
                     {
-                        std::cout << "\t\tCLIENT" << std::endl;
+
                         // from "client" to "router"
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
-                            std::cout << "client talk" << std::endl;
+                            std::cout << "\t\tCLIENT" << std::endl;
                             tcp* pTCP = (tcp*)p.getBuffer();
-                            std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+                            std::cout << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
+                            bool isCurrentProtocol = false;
+                            if (this->ui->cbProtocol->currentText() == "Netsoul")
+                                isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
 
-
-                            if (pTCP->ip_len == p.Size - sizeof(tcp))
-                                std::cout << "Bonne taille" << std::endl;
+                            if (isCurrentProtocol)
+                                std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                            if (pTCP->ip_len == p.Size)
+                                std::cout << "\t\t\tBonne taille" << std::endl;
                         }
+                        else
+                             std::cout << "from client not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macB, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
                     }
-                    else if (pIP->ip_dst == ipA)
+                    else if (pIP->ip_dst == ipA) // from "router" to "client"
                     {
-                        std::cout << "\t\tROUTER" << std::endl;
-                        // from "router" to "client"
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
-                            std::cout << "router talk" << std::endl;
-                            static_cast<http*>(this->currentProtocol)->sendTargetBToTargetA(p);
+                            std::cout << "\t\tROUTER" << std::endl;
+                            if (this->ui->cbProtocol->currentText() == "Netsoul")
+                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
                             tcp* pTCP = (tcp*)p.getBuffer();
                             std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
 
@@ -185,6 +189,8 @@ void MainWindow::play()
 
                             //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                         }
+                        else
+                             std::cout << "from router not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macA, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
                     }
@@ -192,21 +198,21 @@ void MainWindow::play()
                     {
                         std::cout << "JUNK PACKET" << std::endl;
                         uint32_t ips = pIP->ip_src;
-                        printf("---\nsrc%d.%d.%d.%d\n",
+                        printf("---\nsrc%d.%d.%d.%d -  ",
                                ((ips >> 24) & 0xff),
                                ((ips >> 16) & 0xff),
                                ((ips >> 8) & 0xff),
                                ((ips >> 0) & 0xff)
                                );
                         ips = pIP->ip_dst;
-                        printf("dst %d.%d.%d.%d\n",
+                        printf("dst %d.%d.%d.%d -  ",
                                ((ips >> 24) & 0xff),
                                ((ips >> 16) & 0xff),
                                ((ips >> 8) & 0xff),
                                ((ips >> 0) & 0xff)
                                );
                         ips = ipA;
-                        printf("ipA %d.%d.%d.%d\n",
+                        printf("ipA %d.%d.%d.%d  -  ",
                                ((ips >> 24) & 0xff),
                                ((ips >> 16) & 0xff),
                                ((ips >> 8) & 0xff),
@@ -221,6 +227,18 @@ void MainWindow::play()
                                );
                     }
                 }
+
+                s.Write(p);
+                std::cout << "============== End of New Packet ==============" << std::endl;
+            }
+            QCoreApplication::processEvents();
+            QCoreApplication::sendPostedEvents(NULL, 0);
+            usleep(1000); // sleep 1ms
+        }
+    }
+
+}
+
 /*
                 if (memcmp(pETH->ar_tha, mymac, 6) == 0 && memcmp(pETH->ar_sha, macA, 6) == 0)
                 {
@@ -233,23 +251,7 @@ void MainWindow::play()
                     memcpy(pETH->ar_sha, mymac, 6);
                 }
 */
-                //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
-                s.Write(p);
-                //p.getBuffer()
-            }
-            QCoreApplication::processEvents();
-            QCoreApplication::sendPostedEvents(NULL, 0);
-            usleep(1000); // sleep 1ms
-            /*
-            if (static_cast<Netsoul*>(this->currentProtocol)->isProtocol(p))
-            {;
-            }
-            */
-            //s.Write(p);
-        }
-    }
 
-}
 
 void MainWindow::scan()
 {
