@@ -59,7 +59,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->btnScan, SIGNAL(clicked()), this, SLOT(scan()) );
     QObject::connect(ui->pbSetDest, SIGNAL(clicked()), this, SLOT(setDest()));
     QObject::connect(ui->pbSetSource, SIGNAL(clicked()), this, SLOT(setSource()));
-    QObject::connect(ui->pbSpoof, SIGNAL(clicked()), this, SLOT(startSpoofing()));
     QObject::connect(ui->pbPlay, SIGNAL(clicked()), this, SLOT(play()));
     QObject::connect(this, SIGNAL(destroyed()), this, SLOT(close()));
 }
@@ -104,9 +103,21 @@ void MainWindow::setSource()
 
 void MainWindow::play()
 {
-    if (this->currentProtocol == NULL)
+    if (this->state & Playing)
     {
+        delete this->currentProtocol;
+        this->currentProtocol = NULL;
+        this->ui->pbPlay->setText("Play");
+        system("pkill fwdPacket");
+        this->statusText->setText("Spoofing stopped");
+        this->state -= Spoofing;
+        this->state -= Playing;
+    }
+    else if (this->currentProtocol == NULL)
+    {
+        startSpoofing();
         this->state |= Playing;
+        this->ui->pbPlay->setText("Stop");
         if (this->ui->cbProtocol->currentText() == "Netsoul")
             this->currentProtocol = new Netsoul(this->ui->centralWidget);
         else if (this->ui->cbProtocol->currentText() == "Http")
@@ -213,6 +224,14 @@ void MainWindow::play()
             QCoreApplication::sendPostedEvents(NULL, 0);
             usleep(10); // sleep 1ms
         }
+        if (this->state & Playing)
+        {
+            this->statusText->setText("Playing done");
+            this->state -= Playing;
+        }
+        else
+            this->statusText->setText("Playing aborted");
+        this->ui->pbPlay->setText("Play");
     }
 
 }
@@ -291,16 +310,6 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 
 void MainWindow::startSpoofing()
 {
-    if (this->state & Spoofing)
-    {
-        this->statusText->setText("Spoofing stopped");
-        this->ui->pbSpoof->setText("Start Spoofing");
-        this->state -= Spoofing;
-        system("pkill fwdPacket");
-    }
-    else
-    {
-        this->ui->pbSpoof->setText("Stop spoofing");
         this->state |= Spoofing;
         this->statusText->setText("Spoofing ...");
         if (!fork())
@@ -320,5 +329,4 @@ void MainWindow::startSpoofing()
                   this->ui->leSourceIP->text().toStdString().c_str(),
                   this->ui->leSourceMAC->text().toStdString().c_str(),
                   (char*)NULL);
-    }
 }
