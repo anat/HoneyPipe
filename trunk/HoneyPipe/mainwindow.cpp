@@ -172,6 +172,7 @@ void MainWindow::play()
                              std::cout << "from client not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macB, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
+			s.Write(p);
                     }
                     else if (pIP->ip_dst == ipA) // from "router" to "client"
                     {
@@ -193,6 +194,7 @@ void MainWindow::play()
                              std::cout << "from router not tcp" << std::endl;
                         memcpy(pETH->ar_tha, macA, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
+			s.Write(p);
                     }
                     else
                     {
@@ -228,7 +230,6 @@ void MainWindow::play()
                     }
                 }
 
-                s.Write(p);
                 std::cout << "============== End of New Packet ==============" << std::endl;
             }
             QCoreApplication::processEvents();
