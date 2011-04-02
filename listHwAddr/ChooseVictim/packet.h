@@ -34,7 +34,7 @@ struct eth
   uint8_t  ar_sha[6];
   uint16_t type;
   void craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac);
-};
+} __attribute__ ((packed));
 
 # define ARP_REQUEST   1        /* ARP request.  */
 # define ARP_REPLY     2        /* ARP reply.  */
@@ -52,7 +52,7 @@ struct arp : public eth
   uint8_t  ar_tha[6];   /* Target hardware address.  */
   uint8_t  ar_tip[4];   /* Target IP address.  */
   void craftARP(uint8_t *srcmac, uint8_t *srcip, uint8_t *dstmac, uint8_t *dstip);
-};
+} __attribute__ ((packed));
 
 
 //enum {
@@ -80,31 +80,31 @@ struct ip : public eth
   uint32_t ip_dst;
   bool isTCP() {return (this->ip_p == IPPROTO_TCP);}
   void craftIP();
-};
+} __attribute__ ((packed));
 
 
 
 
 struct tcp : public ip
-  {
-    u_int16_t source;
-    u_int16_t dest;
-    u_int32_t seq;
-    u_int32_t ack_seq;
-    u_int16_t res1:4;
-    u_int16_t doff:4;
-    u_int16_t fin:1;
-    u_int16_t syn:1;
-    u_int16_t rst:1;
-    u_int16_t psh:1;
-    u_int16_t ack:1;
-    u_int16_t urg:1;
-    u_int16_t res2:2;
-    u_int16_t window;
-    u_int16_t check;
-    u_int16_t urg_ptr;
-    void craftTCP();
-};
+{
+  u_int16_t source;
+  u_int16_t dest;
+  u_int32_t seq;
+  u_int32_t ack_seq;
+  u_int16_t res1:4;
+  u_int16_t doff:4;
+  u_int16_t fin:1;
+  u_int16_t syn:1;
+  u_int16_t rst:1;
+  u_int16_t psh:1;
+  u_int16_t ack:1;
+  u_int16_t urg:1;
+  u_int16_t res2:2;
+  u_int16_t window;
+  u_int16_t check;
+  u_int16_t urg_ptr;
+  void craftTCP();
+} __attribute__ ((packed));
 
 
 
