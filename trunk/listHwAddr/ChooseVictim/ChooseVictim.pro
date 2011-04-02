@@ -16,7 +16,8 @@ SOURCES += main.cpp\
     packet.cpp \
     rawsocket.cpp \
     netsoul.cpp \
-    rsock.cpp
+    rsock.cpp \
+    http.cpp
 
 HEADERS  += mainwindow.h \
     arprequest.h \
@@ -24,7 +25,9 @@ HEADERS  += mainwindow.h \
     rawsocket.h \
     IProtocol.hpp \
     netsoul.h \
-    rsock.h
+    rsock.h \
+    http.h
 
 FORMS    += mainwindow.ui \
-    netsoul.ui
+    netsoul.ui \
+    http.ui
