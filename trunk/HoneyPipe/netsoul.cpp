@@ -34,7 +34,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     std::cout << "\t\tRECEIVED" << std::endl;
     int i = 0;
     while (data[i] != '\n' && i < p.Size - sizeof(tcp))
-        ;
+        i++;
     if (data[i] == '\n')
     {
         data[i] = 0;
@@ -54,7 +54,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
     std::cout << "\t\tRECEIVED" << std::endl;
     int i = 0;
     while (data[i] != '\n' && i < p.Size - sizeof(tcp))
-        ;
+        i++;
     if (data[i] == '\n')
     {
         data[i] = 0;
