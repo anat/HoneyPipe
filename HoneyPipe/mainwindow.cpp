@@ -157,7 +157,7 @@ void MainWindow::play()
                         {
                             std::cout << "\t\tCLIENT" << std::endl;
                             tcp* pTCP = (tcp*)p.getBuffer();
-                            std::cout << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
+                            std::cout << (pTCP->ack == 1 ? "ACK " : "") << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
 
                             // Detect protocol
                             if (this->ui->cbProtocol->currentText() == "Netsoul")

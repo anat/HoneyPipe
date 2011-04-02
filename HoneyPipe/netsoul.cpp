@@ -23,7 +23,10 @@ bool Netsoul::isProtocol(Packet & p)
     int i = 0;
     while (begin[i])
         if (strncmp(begin[i], data, strlen(begin[i++])))
+        {
+            write(1, data, p.Size - sizeof(tcp));
             return true;
+        }
     return false;
 }
 
