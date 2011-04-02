@@ -141,7 +141,6 @@ void MainWindow::play()
             // poll each ms
             if (s.Poll(1000))
             {
-                std::cout << "============== New Packet ==============" << std::endl;
                 Packet p;
                 bool isCurrentProtocol = false;
                 s.Read(p, true);
@@ -149,7 +148,29 @@ void MainWindow::play()
                 if (p.Size > sizeof(ip))
                 {
                     ip* pIP = static_cast<ip*>(p.getBuffer());
-                    //printf("%x = %x %d\n", pIP->ip_dst, pIP->ip_src, ((char *)&pIP->ip_src)[0]);
+
+		    // AFFICHAGE DEBUG
+                    if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
+		      {
+			std::cout << "============== New Packet ==============" << std::endl;
+                        uint32_t ips = pIP->ip_src;
+                        printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff),
+			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
+                               ((ips >> 24) & 0xff));
+                        ips = pIP->ip_dst;
+                        printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff),
+			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
+                               ((ips >> 24) & 0xff));
+                        ips = ipA;
+                        printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff),
+			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
+                               ((ips >> 24) & 0xff));
+                        ips = ipB;
+                        printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff),
+			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
+                               ((ips >> 24) & 0xff));
+		      }
+		    // ! FIN AFFICHAGE !
 
                     if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
                     {
@@ -203,39 +224,12 @@ void MainWindow::play()
                     }
                     else
                     {
-                        std::cout << "JUNK PACKET" << std::endl;
-                        uint32_t ips = pIP->ip_src;
-                        printf("---\nsrc%d.%d.%d.%d -  ",
-                               ((ips >> 24) & 0xff),
-                               ((ips >> 16) & 0xff),
-                               ((ips >> 8) & 0xff),
-                               ((ips >> 0) & 0xff)
-                               );
-                        ips = pIP->ip_dst;
-                        printf("dst %d.%d.%d.%d -  ",
-                               ((ips >> 24) & 0xff),
-                               ((ips >> 16) & 0xff),
-                               ((ips >> 8) & 0xff),
-                               ((ips >> 0) & 0xff)
-                               );
-                        ips = ipA;
-                        printf("ipA %d.%d.%d.%d  -  ",
-                               ((ips >> 24) & 0xff),
-                               ((ips >> 16) & 0xff),
-                               ((ips >> 8) & 0xff),
-                               ((ips >> 0) & 0xff)
-                               );
-                        ips = ipB;
-                        printf("ipB %d.%d.%d.%d\n",
-                               ((ips >> 24) & 0xff),
-                               ((ips >> 16) & 0xff),
-                               ((ips >> 8) & 0xff),
-                               ((ips >> 0) & 0xff)
-                               );
+		      //std::cout << "JUNK PACKET" << std::endl;
                     }
+                    if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
+		      std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
                 }
 
-                std::cout << "============== End of New Packet ==============" << std::endl;
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);

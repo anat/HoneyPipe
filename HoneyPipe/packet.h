@@ -20,7 +20,7 @@ public:
         this->buffer = realloc(this->buffer, this->Size + size);
         memcpy(((char *)this->buffer) + this->Size, data, size);
         this->Size += size;
-        std::cout << "Packet Size = " << this->Size << std::endl;
+        //std::cout << "Packet Size = " << this->Size << std::endl;
         return this->Size;
     }
     uint16_t checksum(uint16_t *buf, int nwords);
