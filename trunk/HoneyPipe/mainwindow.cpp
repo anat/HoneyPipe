@@ -183,7 +183,6 @@ void MainWindow::play()
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "\t\tCLIENT" << std::endl;
-
                             // Detect protocol
                             if (this->ui->cbProtocol->currentText() == "Netsoul")
                                 isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
