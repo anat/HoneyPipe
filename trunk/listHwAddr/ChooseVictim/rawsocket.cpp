@@ -42,14 +42,13 @@ int RAWSocket::Read(Packet & p, bool create)
     if (create)
     {
         char buffer[65536];
-        int ret = recv(this->Handler, buffer, 65536, 0);
-        if (ret == 0 || ret == -1)
-            std::cerr << "LOL" << std::endl;
-        p.append(buffer, ret);
-        return ret;
+        rec = recv(this->Handler, buffer, 65536, 0);
+        p.append(buffer, rec);
     }
     else
         rec = recv(this->Handler, p.getBuffer(), p.Size, 0);
+    if (rec == 0 || rec == -1)
+        std::cerr << "LOL" << std::endl;
     std::cout << "Size Received = " << rec << std::endl;
         return rec;
 }
