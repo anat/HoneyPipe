@@ -378,6 +378,11 @@
        <string>Netsoul</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Http</string>
+      </property>
+     </item>
     </widget>
     <widget class="QPushButton" name="pbPlay">
      <property name="geometry">

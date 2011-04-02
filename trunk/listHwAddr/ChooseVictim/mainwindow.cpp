@@ -12,6 +12,7 @@
 #include "netsoul.h"
 #include <unistd.h>
 #include "rsock.h"
+#include "http.h"
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -110,6 +111,12 @@ void MainWindow::play()
             this->currentProtocol = new Netsoul(this->ui->centralWidget);
             this->currentProtocol->show();
         }
+        else if (this->ui->cbProtocol->currentText() == "Http")
+        {
+            http t;
+            this->currentProtocol = new http(this->ui->centralWidget);
+            this->currentProtocol->show();
+        }
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);
 
@@ -168,6 +175,7 @@ void MainWindow::play()
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "router talk" << std::endl;
+                            static_cast<http*>(this->currentProtocol)->sendTargetBToTargetA(p);
                             tcp* pTCP = (tcp*)p.getBuffer();
                             std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
 
@@ -175,7 +183,7 @@ void MainWindow::play()
                                 std::cout << "Bonne taille" << std::endl;
 
 
-                            write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
+                            //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                         }
                         memcpy(pETH->ar_tha, macA, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
