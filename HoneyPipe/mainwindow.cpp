@@ -108,18 +108,12 @@ void MainWindow::play()
     {
         this->state |= Playing;
         if (this->ui->cbProtocol->currentText() == "Netsoul")
-        {
             this->currentProtocol = new Netsoul(this->ui->centralWidget);
-            this->currentProtocol->show();
-        }
         else if (this->ui->cbProtocol->currentText() == "Http")
-        {
             this->currentProtocol = new http(this->ui->centralWidget);
-            this->currentProtocol->show();
-        }
+        this->currentProtocol->show();
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);
-
 
         uint32_t ipA, ipB, myip;
         QHostAddress tmp;
@@ -148,112 +142,78 @@ void MainWindow::play()
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
-                if (p.Size > sizeof(ip))
+                // AFFICHAGE DEBUG
+                if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
                 {
+                    std::cout << "============== New Packet ==============" << std::endl;
+                    uint32_t ips = pIP->ip_src;
+                    printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
+                    printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipA;
+                    printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
+                    printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
+                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
+                        std::cout << (pTCP->ack & 1 ? "ACK " : "") << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
+                        << std::endl << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+                }
+                // ! FIN AFFICHAGE !
 
-
-		    // AFFICHAGE DEBUG
-                    if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
-		      {
-			std::cout << "============== New Packet ==============" << std::endl;
-                        uint32_t ips = pIP->ip_src;
-                        printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff),
-			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
-                               ((ips >> 24) & 0xff));
-                        ips = pIP->ip_dst;
-                        printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff),
-			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
-                               ((ips >> 24) & 0xff));
-                        ips = ipA;
-                        printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff),
-			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
-                               ((ips >> 24) & 0xff));
-                        ips = ipB;
-                        printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff),
-			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
-                               ((ips >> 24) & 0xff));
-                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                          std::cout << (pTCP->ack & 1 ? "ACK " : "") << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
-                            << std::endl << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
-		      }
-		    // ! FIN AFFICHAGE !
-
-                    if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
+                if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
+                {
+                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
                     {
-                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                        {
-                            std::cout << "\t\tCLIENT" << std::endl;
-                            // Detect protocol
-                            if (this->ui->cbProtocol->currentText() == "Netsoul")
-                                isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
-                            if (isCurrentProtocol)
-                                std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
-                            // Process packet
-                            /*
+                        std::cout << "\t\tCLIENT" << std::endl;
+                        // Detect protocol
+                        if (this->ui->cbProtocol->currentText() == "Netsoul")
+                            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
+                        if (isCurrentProtocol)
+                            std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                        // Process packet
+                        /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
                                 */
-                        }
-                        else
-                             std::cout << "from client not tcp" << std::endl;
-                        memcpy(pETH->ar_tha, macB, 6);
-                        memcpy(pETH->ar_sha, mymac, 6);
-                        s.Write(p);
                     }
-                    else if (pIP->ip_dst == ipA) // from "router" to "client"
+                    else
+                        std::cout << "from client not tcp" << std::endl;
+                    memcpy(pETH->ar_tha, macB, 6);
+                    memcpy(pETH->ar_sha, mymac, 6);
+                    s.Write(p);
+                }
+                else if (pIP->ip_dst == ipA) // from "router" to "client"
+                {
+                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
                     {
-                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                        {
-                            std::cout << "\t\tROUTER" << std::endl;
+                        std::cout << "\t\tROUTER" << std::endl;
 
-                            // Detect protocol
-                            if (this->ui->cbProtocol->currentText() == "Netsoul")
-                                isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
-                            if (isCurrentProtocol)
-                                std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
-                            // Process packet
-                            /*
+                        // Detect protocol
+                        if (this->ui->cbProtocol->currentText() == "Netsoul")
+                            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
+                        if (isCurrentProtocol)
+                            std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                        // Process packet
+                        /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
                                 */
-                        }
-                        else
-                             std::cout << "from router not tcp" << std::endl;
-                        memcpy(pETH->ar_tha, macA, 6);
-                        memcpy(pETH->ar_sha, mymac, 6);
-                        s.Write(p);
                     }
                     else
-                    {
-		      //std::cout << "JUNK PACKET" << std::endl;
-                    }
-                    if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
-		      std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
+                        std::cout << "from router not tcp" << std::endl;
+                    s.Write(p);
                 }
-
+                else
+                {
+                    //std::cout << "JUNK PACKET" << std::endl;
+                }
+                if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
+                    std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
-            usleep(1000); // sleep 1ms
+            usleep(10); // sleep 1ms
         }
     }
 
 }
-
-
-/*
-                if (memcmp(pETH->ar_tha, mymac, 6) == 0 && memcmp(pETH->ar_sha, macA, 6) == 0)
-                {
-                    memcpy(pETH->ar_tha, macB, 6);
-                    memcpy(pETH->ar_sha, mymac, 6);
-                }
-                else if ((memcmp(pETH->ar_tha, mymac, 6) == 0) && (memcmp(pETH->ar_sha, macB, 6) == 0))
-                {
-                    memcpy(pETH->ar_tha, macA, 6);
-                    memcpy(pETH->ar_sha, mymac, 6);
-                }
-*/
-
 
 void MainWindow::scan()
 {
