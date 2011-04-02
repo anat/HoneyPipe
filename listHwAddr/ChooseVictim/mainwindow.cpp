@@ -114,12 +114,14 @@ void MainWindow::play()
         s.Create(this->currentHWIndex, ETH_P_IP);
 
 
-        u_int32_t ipA, ipB;
+        uint32_t ipA, ipB;
         QHostAddress tmp;
         tmp.setAddress(this->ui->leSourceIP->text());
         ipA = htonl(tmp.toIPv4Address());
         tmp.setAddress(this->ui->leRouterIP->text());
         ipB = htonl(tmp.toIPv4Address());
+
+
         uint8_t macA[6], macB[6], mymac[6];
 
         mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), (uint8_t *)macA);
@@ -128,10 +130,10 @@ void MainWindow::play()
 
         while (this->state & Playing)
         {
-            Packet p;
             // poll each ms
             if (s.Poll(1000))
             {
+                Packet p;
                 s.Read(p, true);
                 std::cout << "Packet received : " << p.Size << std::endl;
                 eth* pETH = (eth*)p.getBuffer();
@@ -139,11 +141,13 @@ void MainWindow::play()
                 {
                     ip* pIP = (ip*)p.getBuffer();
                     //std::cout << (int)pIP->ip_p << std::endl;
-
+                    printf("-(%x %x)-\n", pIP->ip_src, pIP->ip_dst);
+                    //std::cout << "ip_dst = " << pIp->ip_dst << " ipB = " << ipB << " ip_src = " << pIP->ip_src << std::endl;
                     if (pIP->ip_dst == ipB && pIP->ip_src == ipA)
                     {
+                        std::cout << "client to router" << std::endl;
                         // from "client" to "router"
-                        if (pIP->isTCP())
+                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "client talk" << std::endl;
                             tcp* pTCP = (tcp*)p.getBuffer();
@@ -152,15 +156,15 @@ void MainWindow::play()
 
                             if (pTCP->ip_len == p.Size - sizeof(tcp))
                                 std::cout << "Bonne taille" << std::endl;
-
                         }
-                        //memcpy(pETH->ar_tha, macB, 6);
+                        memcpy(pETH->ar_tha, macB, 6);
                         //memcpy(pETH->ar_sha, mymac, 6);
                     }
                     else if (pIP->ip_dst == ipA && pIP->ip_src == ipB)
                     {
+                        std::cout << "router to client" << std::endl;
                         // from "router" to "client"
-                        if (pIP->isTCP())
+                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "router talk" << std::endl;
                             tcp* pTCP = (tcp*)p.getBuffer();
@@ -172,11 +176,11 @@ void MainWindow::play()
 
                             write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                         }
-                        //memcpy(pETH->ar_tha, macA, 6);
-                        //memcpy(pETH->ar_sha, mymac, 6);
+                        memcpy(pETH->ar_tha, macA, 6);
+                       // memcpy(pETH->ar_sha, mymac, 6);
                     }
                 }
-
+/*
                 if (memcmp(pETH->ar_tha, mymac, 6) == 0 && memcmp(pETH->ar_sha, macA, 6) == 0)
                 {
                     memcpy(pETH->ar_tha, macB, 6);
@@ -187,12 +191,8 @@ void MainWindow::play()
                     memcpy(pETH->ar_tha, macA, 6);
                     memcpy(pETH->ar_sha, mymac, 6);
                 }
-
+*/
                 //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
-
-
-
-
                 s.Write(p);
                 //p.getBuffer()
             }

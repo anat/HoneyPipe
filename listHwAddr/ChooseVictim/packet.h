@@ -85,7 +85,7 @@ struct ip : public eth
 
 
 
-struct tcp : ip
+struct tcp : public ip
   {
     u_int16_t source;
     u_int16_t dest;
