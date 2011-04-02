@@ -144,10 +144,13 @@ void MainWindow::play()
                 Packet p;
                 bool isCurrentProtocol = false;
                 s.Read(p, true);
-                eth* pETH = (eth*)p.getBuffer();
+                eth* pETH = static_cast<eth*>(p.getBuffer());
+                ip*  pIP = static_cast<ip*>(p.getBuffer());
+                tcp* pTCP = static_cast<tcp*>(p.getBuffer());
+
                 if (p.Size > sizeof(ip))
                 {
-                    ip* pIP = static_cast<ip*>(p.getBuffer());
+
 
 		    // AFFICHAGE DEBUG
                     if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
@@ -169,6 +172,9 @@ void MainWindow::play()
                         printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff),
 			       ((ips >> 8) & 0xff), ((ips >> 16) & 0xff),
                                ((ips >> 24) & 0xff));
+                        if (pIP->isTCP() && p.Size >= sizeof(tcp))
+                          std::cout << (pTCP->ack & 1 ? "ACK " : "") << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
+                            << std::endl << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
 		      }
 		    // ! FIN AFFICHAGE !
 
@@ -177,8 +183,6 @@ void MainWindow::play()
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "\t\tCLIENT" << std::endl;
-                            tcp* pTCP = (tcp*)p.getBuffer();
-                            std::cout << (pTCP->ack == 1 ? "ACK " : "") << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
 
                             // Detect protocol
                             if (this->ui->cbProtocol->currentText() == "Netsoul")
@@ -202,8 +206,6 @@ void MainWindow::play()
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "\t\tROUTER" << std::endl;
-                            tcp* pTCP = (tcp*)p.getBuffer();
-                            std::cout << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
 
                             // Detect protocol
                             if (this->ui->cbProtocol->currentText() == "Netsoul")
@@ -238,6 +240,7 @@ void MainWindow::play()
     }
 
 }
+
 
 /*
                 if (memcmp(pETH->ar_tha, mymac, 6) == 0 && memcmp(pETH->ar_sha, macA, 6) == 0)
