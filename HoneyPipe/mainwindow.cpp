@@ -198,6 +198,8 @@ void MainWindow::play()
                     }
                     else
                         std::cout << "from router not tcp" << std::endl;
+                    memcpy(pETH->ar_tha, macA, 6);
+                    memcpy(pETH->ar_sha, mymac, 6);
                     s.Write(p);
                 }
                 else
