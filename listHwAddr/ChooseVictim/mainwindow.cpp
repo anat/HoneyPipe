@@ -114,13 +114,14 @@ void MainWindow::play()
         s.Create(this->currentHWIndex, ETH_P_IP);
 
 
-        uint32_t ipA, ipB;
+        uint32_t ipA, ipB, myip;
         QHostAddress tmp;
         tmp.setAddress(this->ui->leSourceIP->text());
         ipA = htonl(tmp.toIPv4Address());
         tmp.setAddress(this->ui->leRouterIP->text());
         ipB = htonl(tmp.toIPv4Address());
-
+        tmp.setAddress(this->ui->cbIp->currentText());
+        myip = htonl(tmp.toIPv4Address());
 
         uint8_t macA[6], macB[6], mymac[6];
 
@@ -135,16 +136,44 @@ void MainWindow::play()
             {
                 Packet p;
                 s.Read(p, true);
-                std::cout << "Packet received : " << p.Size << std::endl;
                 eth* pETH = (eth*)p.getBuffer();
                 if (p.Size > sizeof(ip))
                 {
-                    ip* pIP = (ip*)p.getBuffer();
-                    printf("-(%x %x)-\n", pIP->ip_src, pIP->ip_dst);
-                    //std::cout << "ip_dst = " << pIp->ip_dst << " ipB = " << ipB << " ip_src = " << pIP->ip_src << std::endl;
-                    if (pIP->ip_dst == ipB && pIP->ip_src == ipA)
+                    ip* pIP = static_cast<ip*>(p.getBuffer());
+                    //printf("%x = %x %d\n", pIP->ip_dst, pIP->ip_src, ((char *)&pIP->ip_src)[0]);
+                    /*
+                    uint32_t ips = pIP->ip_src;
+                    printf("---\nsrc%d.%d.%d.%d\n",
+                           ((ips >> 24) & 0xff),
+                           ((ips >> 16) & 0xff),
+                           ((ips >> 8) & 0xff),
+                           ((ips >> 0) & 0xff)
+                           );
+                    ips = pIP->ip_dst;
+                    printf("dst %d.%d.%d.%d\n",
+                           ((ips >> 24) & 0xff),
+                           ((ips >> 16) & 0xff),
+                           ((ips >> 8) & 0xff),
+                           ((ips >> 0) & 0xff)
+                           );
+                    ips = ipA;
+                    printf("ipA %d.%d.%d.%d\n",
+                           ((ips >> 24) & 0xff),
+                           ((ips >> 16) & 0xff),
+                           ((ips >> 8) & 0xff),
+                           ((ips >> 0) & 0xff)
+                           );
+                    ips = ipB;
+                    printf("ipB %d.%d.%d.%d\n",
+                           ((ips >> 24) & 0xff),
+                           ((ips >> 16) & 0xff),
+                           ((ips >> 8) & 0xff),
+                           ((ips >> 0) & 0xff)
+                           );
+                    */
+                    if (pIP->ip_src == ipA && pIP->ip_dst != myip)
                     {
-                        std::cout << "client to router" << std::endl;
+                        std::cout << "\t\tCLIENT" << std::endl;
                         // from "client" to "router"
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
@@ -157,11 +186,11 @@ void MainWindow::play()
                                 std::cout << "Bonne taille" << std::endl;
                         }
                         memcpy(pETH->ar_tha, macB, 6);
-                        //memcpy(pETH->ar_sha, mymac, 6);
+                        memcpy(pETH->ar_sha, mymac, 6);
                     }
-                    else if (pIP->ip_dst == ipA && pIP->ip_src == ipB)
+                    else if (htonl(pIP->ip_dst) == ipA)
                     {
-                        std::cout << "router to client" << std::endl;
+                        std::cout << "\t\tROUTER" << std::endl;
                         // from "router" to "client"
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
@@ -176,7 +205,7 @@ void MainWindow::play()
                             write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
                         }
                         memcpy(pETH->ar_tha, macA, 6);
-                       // memcpy(pETH->ar_sha, mymac, 6);
+                        memcpy(pETH->ar_sha, mymac, 6);
                     }
                 }
 /*
