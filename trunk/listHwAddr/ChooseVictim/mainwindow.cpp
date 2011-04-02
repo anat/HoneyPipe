@@ -161,7 +161,7 @@ void MainWindow::play()
                         memcpy(pETH->ar_tha, macB, 6);
                         memcpy(pETH->ar_sha, mymac, 6);
                     }
-                    else if (htonl(pIP->ip_dst) == ipA)
+                    else if (pIP->ip_dst == ipA)
                     {
                         std::cout << "\t\tROUTER" << std::endl;
                         // from "router" to "client"
