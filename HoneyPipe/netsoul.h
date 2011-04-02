@@ -21,6 +21,8 @@ public:
     virtual int sendTargetBToTargetA(Packet & p);
 private:
     Ui::Netsoul *ui;
+    uint16_t portA;
+    uint16_t portB;
 };
 
 #endif // NETSOUL_H

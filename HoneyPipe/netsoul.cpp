@@ -1,10 +1,13 @@
 #include "netsoul.h"
 #include "ui_netsoul.h"
 #include <string>
+#include <cstdio>
 #include "packet.h"
 Netsoul::Netsoul(QWidget *parent) :
         QMainWindow(parent),
-        ui(new Ui::Netsoul)
+        ui(new Ui::Netsoul),
+	portA(0),
+	portB(0)
 {
     ui->setupUi(this);
 }
@@ -19,14 +22,26 @@ bool Netsoul::isProtocol(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
-
     int i = 0;
-    while (begin[i])
-        if (strncmp(begin[i], data, strlen(begin[i++])))
-        {
-            write(1, data, p.Size - sizeof(tcp));
-            return true;
-        }
+    tcp* pTCP = (tcp*)p.getBuffer();
+
+    if (portA && portB)
+      {
+	if ((pTCP->source == portA && pTCP->dest == portB) ||
+	    (pTCP->source == portB && pTCP->dest == portA))
+	  return true;
+      }
+    else
+      {
+	while (begin[i])
+	  if (!strncmp(begin[i], data, strlen(begin[i++])))
+	    {
+	      portA = pTCP->source;
+	      portB = pTCP->dest;
+	      write(1, data, p.Size - sizeof(tcp));
+	      return true;
+	    }
+      }
     return false;
 }
 
