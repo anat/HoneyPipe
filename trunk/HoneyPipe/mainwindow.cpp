@@ -143,6 +143,7 @@ void MainWindow::play()
             {
                 std::cout << "============== New Packet ==============" << std::endl;
                 Packet p;
+                bool isCurrentProtocol = false;
                 s.Read(p, true);
                 eth* pETH = (eth*)p.getBuffer();
                 if (p.Size > sizeof(ip))
@@ -159,14 +160,15 @@ void MainWindow::play()
                             std::cout << "\t\tCLIENT" << std::endl;
                             tcp* pTCP = (tcp*)p.getBuffer();
                             std::cout << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
-                            bool isCurrentProtocol = false;
+
+                            // Detect protocol
                             if (this->ui->cbProtocol->currentText() == "Netsoul")
                                 isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
-
                             if (isCurrentProtocol)
                                 std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
-                            if (pTCP->ip_len == p.Size)
-                                std::cout << "\t\t\tBonne taille" << std::endl;
+                            // Process packet
+                            if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
+                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
                         }
                         else
                              std::cout << "from client not tcp" << std::endl;
@@ -179,16 +181,16 @@ void MainWindow::play()
                         if (pIP->isTCP() && p.Size >= sizeof(tcp))
                         {
                             std::cout << "\t\tROUTER" << std::endl;
-                            if (this->ui->cbProtocol->currentText() == "Netsoul")
-                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
                             tcp* pTCP = (tcp*)p.getBuffer();
-                            std::cout << "Source port : " << pTCP->source << std::endl << "Dest port : " << pTCP->dest << std::endl;
+                            std::cout << "\n PORT : src " << pTCP->source << " dst " << pTCP->dest << std::endl;
 
-                            if (pTCP->ip_len == p.Size - sizeof(tcp))
-                                std::cout << "Bonne taille" << std::endl;
-
-
-                            //write(1, ((char *)p.getBuffer()) + sizeof(tcp), p.Size - sizeof(tcp));
+                            // Detect protocol
+                            if (this->ui->cbProtocol->currentText() == "Netsoul")
+                                isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
+                            if (isCurrentProtocol)
+                                std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                            if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
+                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
                         }
                         else
                              std::cout << "from router not tcp" << std::endl;

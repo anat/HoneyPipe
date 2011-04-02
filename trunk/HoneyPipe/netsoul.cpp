@@ -43,20 +43,26 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     {
         std::cout << "Bizarre pas de \n ou fin du buffer" << std::endl;
     }
-    this->ui->pte->setPlainText(QString(data));
-    //write(1, data, 10);
-    /*
-    if (!strncmp("HTTP/1.1 ", data, 9))
-    {
-        this->ui->pte->setPlainText(data);
-    }
-    */
+    this->ui->out->setPlainText(QString(data));
     return 0;
 }
 
 
 int Netsoul::sendTargetBToTargetA(Packet & p)
 {
-
+    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+    std::cout << "\t\tRECEIVED" << std::endl;
+    int i = 0;
+    while (data[i] != '\n' && i < p.Size - sizeof(tcp))
+        ;
+    if (data[i] == '\n')
+    {
+        data[i] = 0;
+    }
+    else
+    {
+        std::cout << "Bizarre pas de \n ou fin du buffer" << std::endl;
+    }
+    this->ui->in->setPlainText(QString(data));
     return 0;
 }
