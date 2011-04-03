@@ -39,7 +39,28 @@ void Packet::computeChecksum()
     pTCP->ip_sum = 0;
     pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
 
+ /*
+    csum_tcpudp_magic(saddr,daddr,len,IPPROTO_TCP,base);
 
+    static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
+                                            unsigned short len,
+                                            unsigned short proto,
+                                            __wsum sum)
+    {
+            return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
+    }
+static inline __sum16 csum_fold(__wsum sum)
+{
+        asm("addl %1, %0                ;\n"
+            "adcl $0xffff, %0   ;\n"
+            : "=r" (sum)
+            : "r" ((__force u32)sum << 16),
+              "0" ((__force u32)sum & 0xffff0000));
+        return (__force __sum16)(~(__force u32)sum >> 16);
+}
+
+
+    */
 }
 
 void eth::craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac)
