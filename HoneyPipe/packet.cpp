@@ -38,13 +38,6 @@ void Packet::computeChecksum()
 
     pTCP->ip_sum = 0;
     pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
-
-
-    /*
-    std::cout << "ORIG " << pTCP->ip_sum << " H " <<  htons(pTCP->ip_sum) <<
-            " | N " << sum << " H " << htons(sum) << std::endl;
-            */
-
 }
 
 void eth::craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac)

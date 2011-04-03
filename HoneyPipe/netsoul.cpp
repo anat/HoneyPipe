@@ -46,25 +46,12 @@ bool Netsoul::isProtocol(Packet & p)
             i++;
          }
       }
-
-    if (isProtocol)
-    {
-         write(1, data, p.Size - sizeof(tcp));
-         char buffer[p.Size];
-         memcpy(buffer, data, p.Size);
-         buffer[p.Size - 1] = 0;
-         QString str((const char *)buffer);
-        this->addActivity(str);
-    }
     return isProtocol;
 }
 
 void Netsoul::addActivity(QString & message)
 {
-    if (this->ui->activity->toPlainText().length() != 0)
-        this->ui->activity->setPlainText(this->ui->activity->toPlainText() + message);
-    else
-        this->ui->activity->setPlainText(this->ui->activity->toPlainText() + message);
+    this->ui->activity->setPlainText("-" + message + this->ui->activity->toPlainText());
 }
 
 
@@ -73,7 +60,14 @@ void Netsoul::addActivity(QString & message)
 int Netsoul::sendTargetAToTargetB(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-    std::cout << "\t\tRECEIVED" << std::endl;
+
+    char buffer[p.Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p.Size - sizeof(tcp));
+    buffer[p.Size - sizeof(tcp)] = 0;
+    QString str("Packet from client : \"");
+    str += (const char *)buffer;
+    str += "\"";
+    this->addActivity(str);
 
     return 0;
 }
@@ -82,12 +76,17 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
 int Netsoul::sendTargetBToTargetA(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-    std::cout << "\t\tRECEIVED" << std::endl;
+
+    char buffer[p.Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p.Size - sizeof(tcp));
+    buffer[p.Size - sizeof(tcp)] = 0;
+    QString str("Packet from router : \"");
+    str += (const char *)buffer;
+    str += "\"";
+    this->addActivity(str);
 
     return 0;
 }
-
-#define NS_SENDMSG "user_cmd "
 
 char *Netsoul::isMessage(Packet & p)
 {

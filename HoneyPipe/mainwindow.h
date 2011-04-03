@@ -31,7 +31,7 @@ private:
     int state;
     int currentHWIndex;
     void	addNewItem(QString const & ip, uint8_t * mac);
-
+    void newPacket(bool isFromTarget);
 public slots:
     void fillIps(QString interface);
     void scan();
