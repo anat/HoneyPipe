@@ -149,7 +149,7 @@ void MainWindow::play()
                 Packet p;
                 bool isCurrentProtocol = false;
                 s.Read(p, true);
-                p.computeChecksum();
+                //p.computeChecksum();
                 eth* pETH = static_cast<eth*>(p.getBuffer());
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
