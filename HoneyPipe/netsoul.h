@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "IProtocol.hpp"
 #include "packet.h"
+#include <string>
 #define NS_SENDMSG "user_cmd "
 
 namespace Ui {
@@ -20,7 +21,7 @@ public:
     virtual bool isProtocol(Packet & p);
     virtual int sendTargetAToTargetB(Packet & p);
     virtual int sendTargetBToTargetA(Packet & p);
-    char *isMessage(Packet & p);
+    std::string *isMessage(Packet & p);
     void addActivity(QString & message);
 private:
     Ui::Netsoul *ui;
