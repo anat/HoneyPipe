@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "IProtocol.hpp"
 #include "packet.h"
+#define NS_SENDMSG "user_cmd "
 
 namespace Ui {
     class Netsoul;
@@ -25,6 +26,8 @@ private:
     Ui::Netsoul *ui;
     uint16_t portA;
     uint16_t portB;
+    uint32_t seq;
+    uint32_t ack;
 };
 
 #endif // NETSOUL_H

@@ -101,6 +101,12 @@ void MainWindow::setSource()
     }
 }
 
+void MainWindow::newPacket(bool isFromTarget)
+{
+
+}
+
+
 void MainWindow::play()
 {
     if (this->state & Playing)
@@ -159,14 +165,16 @@ void MainWindow::play()
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
                 {
                     std::cout << "============== New Packet ==============" << std::endl;
+                    /*
                     uint32_t ips = pIP->ip_src;
                     printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
                     printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipA;
                     printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
                     printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
+                    */
                     if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                        std::cout << (pTCP->ack & 1 ? "ACK " : "") << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
-                        << std::endl << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+                        std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
+                        << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
                 }
                 // ! FIN AFFICHAGE !
 
@@ -180,19 +188,18 @@ void MainWindow::play()
                             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
                         if (isCurrentProtocol)
 			  {
-                            std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
 			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
 			      {
-                                QString message("Got a ns message (" + QString(msg) + ")");
-                                dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(message);
-				std::cout << "Got a ns message (" << msg << ")"<< std::endl;
+                                //QString message("Got a ns message (" + QString(msg) + ")");
+                                //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(message);
+                                //std::cout << "Got a ns message (" << msg << ")"<< std::endl;
 			      }
 			  }
                         // Process packet
-                        /*
-                            if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
+                          if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
-                                */
+
                     }
                     else
                         std::cout << "from client not tcp" << std::endl;
@@ -211,17 +218,16 @@ void MainWindow::play()
                             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
                         if (isCurrentProtocol)
 			  {
-                            std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+                            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
 			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
 			      {
 				std::cout << "Got a ns message rev (" << msg << ")"<< std::endl;
 			      }
 			  }
                         // Process packet
-                        /*
-                            if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
+                           if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
                                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
-                                */
+
                     }
                     else
                         std::cout << "from router not tcp" << std::endl;
@@ -251,6 +257,9 @@ void MainWindow::play()
     }
 
 }
+
+
+
 
 void MainWindow::scan()
 {
