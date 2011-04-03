@@ -1,7 +1,7 @@
 #include "packet.h"
 #include <string.h>
 #include <stdlib.h>
-
+#include <stdio.h>
 
 Packet::Packet()
 {
@@ -22,13 +22,29 @@ void * Packet::getBuffer()
 
 uint16_t Packet::checksum(uint16_t *buf, int nwords)
 {
-    uint16_t sum;
+    uint32_t sum;
 
     for (sum = 0; nwords > 0; nwords--)
         sum += *buf++;
     sum = (sum >> 16) + (sum & 0xffff);
     sum += (sum >> 16);
     return ~sum;
+}
+
+void Packet::computeChecksum()
+{
+    tcp* pTCP = static_cast<tcp*>(this->buffer);
+    unsigned char * packet = ((unsigned char *)this->buffer) + sizeof(eth);
+
+    pTCP->ip_sum = 0;
+    pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
+
+
+    /*
+    std::cout << "ORIG " << pTCP->ip_sum << " H " <<  htons(pTCP->ip_sum) <<
+            " | N " << sum << " H " << htons(sum) << std::endl;
+            */
+
 }
 
 void eth::craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac)

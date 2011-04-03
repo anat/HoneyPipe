@@ -10,6 +10,7 @@ class Packet
 {
 private:
     void *buffer;
+    uint16_t checksum(uint16_t *buf, int nwords);
 public:
     Packet();
     ~Packet();
@@ -23,7 +24,7 @@ public:
         //std::cout << "Packet Size = " << this->Size << std::endl;
         return this->Size;
     }
-    uint16_t checksum(uint16_t *buf, int nwords);
+    void computeChecksum();
     void * getBuffer();
     uint32_t Size;
 };
