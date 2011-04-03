@@ -152,6 +152,7 @@ void MainWindow::play()
                 eth* pETH = static_cast<eth*>(p.getBuffer());
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
+		char *msg;
 
                 // AFFICHAGE DEBUG
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
@@ -177,7 +178,13 @@ void MainWindow::play()
                         if (this->ui->cbProtocol->currentText() == "Netsoul")
                             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
                         if (isCurrentProtocol)
+			  {
                             std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
+			      {
+				std::cout << "Got a ns message (" << msg << ")"<< std::endl;
+			      }
+			  }
                         // Process packet
                         /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
