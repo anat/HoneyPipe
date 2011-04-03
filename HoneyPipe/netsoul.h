@@ -11,6 +11,10 @@ namespace Ui {
     class Netsoul;
 }
 
+typedef enum NetsoulState{
+    WaitingForMessage = 1,
+          } NetsoulState;
+
 class Netsoul : public QMainWindow,  private IProtocol
 {
     Q_OBJECT
@@ -29,6 +33,9 @@ private:
     uint16_t portB;
     uint32_t seq;
     uint32_t ack;
+    int state;
+public slots:
+    void startWaitForMessage();
 };
 
 #endif // NETSOUL_H
