@@ -207,7 +207,13 @@ void MainWindow::play()
                         if (this->ui->cbProtocol->currentText() == "Netsoul")
                             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
                         if (isCurrentProtocol)
+			  {
                             std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
+			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
+			      {
+				std::cout << "Got a ns message rev (" << msg << ")"<< std::endl;
+			      }
+			  }
                         // Process packet
                         /*
                             if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
