@@ -85,9 +85,6 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     }
     else
     {
-        QString message("Empty packet ! size = " + QString::number(p.Size - sizeof(tcp)));
-        this->addActivity(message);
-
         char buffer[p.Size - sizeof(tcp) - 1];
         memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
         buffer[p.Size - sizeof(tcp) - 2] = 0;
@@ -124,9 +121,6 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
     }
     else
     {
-        QString message("Empty packet ! iplen = " + QString(pTCP->ip_len));
-        this->addActivity(message);
-
         char * data = ((char*)p.getBuffer()) + sizeof(tcp);
         char buffer[p.Size - sizeof(tcp) - 1];
         memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
@@ -164,7 +158,7 @@ std::string *Netsoul::isMessage(Packet & p)
                         while (data[i+4+start] != '_') start++;
                         start++;
                     }
-                    while (data[i + 4 + end] != ' ' && data[i + 4 + end] != '\r') end++;
+                    while (data[i + 4 + end] != ' ' && data[i + 4 + end] != '\r' && data[i + 4 + end] != '\n') end++; // if \n or \r stop cause of \r\n & \n (& \r ?)
                     char buffer[end - start + 1];
                     memcpy(buffer, data + i + 4 + start, end - start);
                     buffer[end - start] = 0;
