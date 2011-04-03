@@ -180,13 +180,11 @@ void MainWindow::play()
             if (s.Poll(1000))
             {
                 Packet p;
-                bool isCurrentProtocol = false;
                 s.Read(p, true);
                 //p.computeChecksum();
-                eth* pETH = static_cast<eth*>(p.getBuffer());
+
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
-		char *msg;
 
                 // AFFICHAGE DEBUG
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
