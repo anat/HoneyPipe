@@ -101,9 +101,37 @@ void MainWindow::setSource()
     }
 }
 
-void MainWindow::newPacket(bool isFromTarget)
+void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t* dstMac)
 {
+    bool isCurrentProtocol = false;
+    eth* pETH = static_cast<eth*>(p.getBuffer());
+    ip*  pIP = static_cast<ip*>(p.getBuffer());
+    tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
+    if (pIP->isTCP() && p.Size >= sizeof(tcp))
+    {
+        // Detect protocol
+        if (this->ui->cbProtocol->currentText() == "Netsoul")
+            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
+        if (isCurrentProtocol)
+            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
+        // Process packet
+        if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
+        {
+            if (isFromTarget)
+                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
+            else
+                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
+        }
+    }
+    else
+        std::cout << "from client not tcp" << std::endl;
+    memcpy(pETH->ar_sha, pETH->ar_tha, 6);
+    if (isFromTarget)
+        memcpy(pETH->ar_tha, dstMac, 6);
+    else
+        memcpy(pETH->ar_tha, dstMac, 6);
+    s.Write(p);
 }
 
 
@@ -141,11 +169,10 @@ void MainWindow::play()
         tmp.setAddress(this->ui->cbIp->currentText());
         myip = htonl(tmp.toIPv4Address());
 
-        uint8_t macA[6], macB[6], mymac[6];
+        uint8_t macA[6], macB[6];
 
         mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), (uint8_t *)macA);
         mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), (uint8_t *)macB);
-        mactoa((char*)QNetworkInterface::interfaceFromName(ui->cbInt->currentText()).hardwareAddress().toStdString().c_str(), mymac);
 
         while (this->state & Playing)
         {
@@ -179,66 +206,10 @@ void MainWindow::play()
                 // ! FIN AFFICHAGE !
 
                 if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
-                {
-                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                    {
-                        std::cout << "\t\tCLIENT" << std::endl;
-                        // Detect protocol
-                        if (this->ui->cbProtocol->currentText() == "Netsoul")
-                            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
-                        if (isCurrentProtocol)
-			  {
-                            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
-			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
-			      {
-                                //QString message("Got a ns message (" + QString(msg) + ")");
-                                //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(message);
-                                //std::cout << "Got a ns message (" << msg << ")"<< std::endl;
-			      }
-			  }
-                        // Process packet
-                          if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
-                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
-
-                    }
-                    else
-                        std::cout << "from client not tcp" << std::endl;
-                    memcpy(pETH->ar_tha, macB, 6);
-                    memcpy(pETH->ar_sha, mymac, 6);
-                    s.Write(p);
-                }
+                    this->newPacket(s, p, true, macB);
                 else if (pIP->ip_dst == ipA) // from "router" to "client"
-                {
-                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                    {
-                        std::cout << "\t\tROUTER" << std::endl;
+                    this->newPacket(s, p, false, macA);
 
-                        // Detect protocol
-                        if (this->ui->cbProtocol->currentText() == "Netsoul")
-                            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
-                        if (isCurrentProtocol)
-			  {
-                            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
-			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
-			      {
-				std::cout << "Got a ns message rev (" << msg << ")"<< std::endl;
-			      }
-			  }
-                        // Process packet
-                           if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
-                                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
-
-                    }
-                    else
-                        std::cout << "from router not tcp" << std::endl;
-                    memcpy(pETH->ar_tha, macA, 6);
-                    memcpy(pETH->ar_sha, mymac, 6);
-                    s.Write(p);
-                }
-                else
-                {
-                    //std::cout << "JUNK PACKET" << std::endl;
-                }
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
                     std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
             }
@@ -335,23 +306,23 @@ void	MainWindow::addNewItem(QString const & ip, uint8_t * mac)
 
 void MainWindow::startSpoofing()
 {
-        this->state |= Spoofing;
-        this->statusText->setText("Spoofing ...");
-        if (!fork())
-            execl("./fwdPacket", "./fwdPacket",
-                  ui->cbInt->currentText().toStdString().c_str(),
-                  this->ui->leSourceIP->text().toStdString().c_str(),
-                  this->ui->leSourceMAC->text().toStdString().c_str(),
-                  this->ui->leRouterIP->text().toStdString().c_str(),
-                  this->ui->leRouterMAC->text().toStdString().c_str(),
-                  (char*)NULL);
+    this->state |= Spoofing;
+    this->statusText->setText("Spoofing ...");
+    if (!fork())
+        execl("./fwdPacket", "./fwdPacket",
+              ui->cbInt->currentText().toStdString().c_str(),
+              this->ui->leSourceIP->text().toStdString().c_str(),
+              this->ui->leSourceMAC->text().toStdString().c_str(),
+              this->ui->leRouterIP->text().toStdString().c_str(),
+              this->ui->leRouterMAC->text().toStdString().c_str(),
+              (char*)NULL);
 
-        if (!fork())
-            execl("./fwdPacket", "./fwdPacket",
-                  ui->cbInt->currentText().toStdString().c_str(),
-                  this->ui->leRouterIP->text().toStdString().c_str(),
-                  this->ui->leRouterMAC->text().toStdString().c_str(),
-                  this->ui->leSourceIP->text().toStdString().c_str(),
-                  this->ui->leSourceMAC->text().toStdString().c_str(),
-                  (char*)NULL);
+    if (!fork())
+        execl("./fwdPacket", "./fwdPacket",
+              ui->cbInt->currentText().toStdString().c_str(),
+              this->ui->leRouterIP->text().toStdString().c_str(),
+              this->ui->leRouterMAC->text().toStdString().c_str(),
+              this->ui->leSourceIP->text().toStdString().c_str(),
+              this->ui->leSourceMAC->text().toStdString().c_str(),
+              (char*)NULL);
 }
