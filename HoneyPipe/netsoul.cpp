@@ -86,3 +86,21 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
 
     return 0;
 }
+
+#define NS_SENDMSG "user_cmd msg"
+
+char *Netsoul::isMessage(Packet & p)
+{
+    char *data = ((char*)p.getBuffer()) + sizeof(tcp);
+    int i;
+
+    std::cout << ">> Testing this message: --S--" << data  << "--E--" << std::endl;
+    if (!strncmp(NS_SENDMSG, data, strlen(NS_SENDMSG)))
+      {
+	data += strlen(NS_SENDMSG);
+	for (i = 0; data[i]; i++)
+	  if (!strncmp("msg ", data+i, 4) && (i < 9 || strncmp(NS_SENDMSG, data+i-9, 8)))
+	    return data+i+4;
+      }
+    return NULL;
+}
