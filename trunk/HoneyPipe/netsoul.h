@@ -19,6 +19,7 @@ public:
     virtual bool isProtocol(Packet & p);
     virtual int sendTargetAToTargetB(Packet & p);
     virtual int sendTargetBToTargetA(Packet & p);
+    void addActivity(QString & message);
 private:
     Ui::Netsoul *ui;
     uint16_t portA;
