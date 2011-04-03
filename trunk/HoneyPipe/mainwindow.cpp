@@ -149,6 +149,7 @@ void MainWindow::play()
                 Packet p;
                 bool isCurrentProtocol = false;
                 s.Read(p, true);
+                p.computeChecksum();
                 eth* pETH = static_cast<eth*>(p.getBuffer());
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
@@ -182,6 +183,8 @@ void MainWindow::play()
                             std::cout << "======= " << this->ui->cbProtocol->currentText().toStdString() << " =======" << std::endl;
 			    if ((msg = dynamic_cast<Netsoul *>(this->currentProtocol)->isMessage(p)))
 			      {
+                                QString message("Got a ns message (" + QString(msg) + ")");
+                                dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(message);
 				std::cout << "Got a ns message (" << msg << ")"<< std::endl;
 			      }
 			  }
