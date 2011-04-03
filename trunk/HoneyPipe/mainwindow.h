@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <stdint.h>
 #include <QtGui/QLabel>
+#include "rawsocket.h"
+
 namespace Ui {
     class MainWindow;
 }
@@ -31,7 +33,7 @@ private:
     int state;
     int currentHWIndex;
     void	addNewItem(QString const & ip, uint8_t * mac);
-    void newPacket(bool isFromTarget);
+    void newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t* dstMac);
 public slots:
     void fillIps(QString interface);
     void scan();

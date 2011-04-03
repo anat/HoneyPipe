@@ -51,7 +51,7 @@ bool Netsoul::isProtocol(Packet & p)
 
 void Netsoul::addActivity(QString & message)
 {
-    this->ui->activity->setPlainText("-" + message + this->ui->activity->toPlainText());
+    this->ui->activity->setPlainText("\n- " + message + this->ui->activity->toPlainText());
 }
 
 
@@ -59,15 +59,24 @@ void Netsoul::addActivity(QString & message)
 
 int Netsoul::sendTargetAToTargetB(Packet & p)
 {
-    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-
-    char buffer[p.Size - sizeof(tcp) + 1];
-    memcpy(buffer, data, p.Size - sizeof(tcp));
-    buffer[p.Size - sizeof(tcp)] = 0;
-    QString str("Packet from client : \"");
-    str += (const char *)buffer;
-    str += "\"";
-    this->addActivity(str);
+    char * msg;
+    if ((msg = this->isMessage(p)))
+    {
+        QString message("A>>> Got a ns message (" + QString(msg) + ")");
+        this->addActivity(message);
+        std::cout << "Got a ns message (\"" << msg << "\")\n"<< std::endl;
+    }
+    else
+    {
+        char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+        char buffer[p.Size - sizeof(tcp)];
+        memcpy(buffer, data, p.Size - sizeof(tcp));
+        buffer[p.Size - sizeof(tcp) - 1] = 0;
+        QString str("A>>> Unrecognized Packet : \"");
+        str += (const char *)buffer;
+        str += "\"";
+        this->addActivity(str);
+    }
 
     return 0;
 }
@@ -75,16 +84,24 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
 
 int Netsoul::sendTargetBToTargetA(Packet & p)
 {
-    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-
-    char buffer[p.Size - sizeof(tcp) + 1];
-    memcpy(buffer, data, p.Size - sizeof(tcp));
-    buffer[p.Size - sizeof(tcp)] = 0;
-    QString str("Packet from router : \"");
-    str += (const char *)buffer;
-    str += "\"";
-    this->addActivity(str);
-
+    char * msg;
+    if ((msg = this->isMessage(p)))
+    {
+        QString message("<<<B Got a ns message (" + QString(msg) + ")");
+        this->addActivity(message);
+        std::cout << "Got a ns message (\"" << msg << "\")"<< std::endl;
+    }
+    else
+    {
+        char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+        char buffer[p.Size - sizeof(tcp)];
+        memcpy(buffer, data, p.Size - sizeof(tcp));
+        buffer[p.Size - sizeof(tcp) - 1] = 0;
+        QString str("<<<B Unrecognized Packet : \"");
+        str += (const char *)buffer;
+        str += "\"";
+        this->addActivity(str);
+    }
     return 0;
 }
 
