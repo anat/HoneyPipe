@@ -58,6 +58,21 @@ static inline __sum16 csum_fold(__wsum sum)
               "0" ((__force u32)sum & 0xffff0000));
         return (__force __sum16)(~(__force u32)sum >> 16);
 }
+static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
+                                        unsigned short len,
+                                        unsigned short proto,
+                                        __wsum sum)
+{
+        asm("addl %1, %0        ;\n"
+            "adcl %2, %0        ;\n"
+            "adcl %3, %0        ;\n"
+            "adcl $0, %0        ;\n"
+            : "=r" (sum)
+            : "g" (daddr), "g"(saddr),
+              "g" ((len + proto) << 8), "0" (sum));
+        return sum;
+}
+
 
 
     */
