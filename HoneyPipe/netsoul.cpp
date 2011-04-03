@@ -25,52 +25,56 @@ bool Netsoul::isProtocol(Packet & p)
     const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
 
     tcp* pTCP = (tcp*)p.getBuffer();
+    bool isProtocol = false;
     if (portA && portB)
       {
-        //return false;
         if ((pTCP->source == portA && pTCP->dest == portB) ||
             (pTCP->source == portB && pTCP->dest == portA))
-       {
-            write(1, data, p.Size - sizeof(tcp));
-	  return true;
-      }
+          isProtocol = true;
       }
     else
       {
         int i = 0;
 	while (begin[i])
         {
-            std::cout << "test -" << begin[i] << std::endl;
             if (!strncmp(begin[i], data, strlen(begin[i])))
 	    {
 	      portA = pTCP->source;
 	      portB = pTCP->dest;
-              write(1, data, p.Size - sizeof(tcp));
-	      return true;
+              isProtocol = true;
 	    }
             i++;
          }
       }
+
+    if (isProtocol)
+    {
+         write(1, data, p.Size - sizeof(tcp));
+         char buffer[p.Size];
+         memcpy(buffer, data, p.Size);
+         buffer[p.Size - 1] = 0;
+         QString str((const char *)buffer);
+        this->addActivity(str);
+    }
     return false;
 }
+
+void Netsoul::addActivity(QString & message)
+{
+    if (this->ui->activity->toPlainText().length() != 0)
+        this->ui->activity->setPlainText(this->ui->activity->toPlainText() + message);
+    else
+        this->ui->activity->setPlainText(this->ui->activity->toPlainText() + message);
+}
+
+
 
 
 int Netsoul::sendTargetAToTargetB(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     std::cout << "\t\tRECEIVED" << std::endl;
-    int i = 0;
-    while (data[i] != '\n' && i < p.Size - sizeof(tcp))
-        i++;
-    if (data[i] == '\n')
-    {
-        data[i] = 0;
-    }
-    else
-    {
-        std::cout << "Bizarre pas de \n ou fin du buffer" << std::endl;
-    }
-    this->ui->out->setPlainText(QString(data));
+
     return 0;
 }
 
@@ -79,17 +83,6 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     std::cout << "\t\tRECEIVED" << std::endl;
-    int i = 0;
-    while (data[i] != '\n' && i < p.Size - sizeof(tcp))
-        i++;
-    if (data[i] == '\n')
-    {
-        data[i] = 0;
-    }
-    else
-    {
-        std::cout << "Bizarre pas de \n ou fin du buffer" << std::endl;
-    }
-    this->ui->in->setPlainText(QString(data));
+
     return 0;
 }

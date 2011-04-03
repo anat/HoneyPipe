@@ -13,51 +13,48 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="documentMode">
+   <bool>false</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPlainTextEdit" name="in">
+   <widget class="QPlainTextEdit" name="activity">
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>60</y>
-      <width>541</width>
-      <height>171</height>
+      <x>20</x>
+      <y>90</y>
+      <width>761</width>
+      <height>441</height>
      </rect>
     </property>
-   </widget>
-   <widget class="QPlainTextEdit" name="out">
-    <property name="geometry">
-     <rect>
-      <x>160</x>
-      <y>330</y>
-      <width>541</width>
-      <height>171</height>
-     </rect>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: black; color:#00FF00;</string>
+    </property>
+    <property name="documentTitle">
+     <string/>
+    </property>
+    <property name="plainText">
+     <string/>
+    </property>
+    <property name="backgroundVisible">
+     <bool>false</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QPushButton" name="changeMessage">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>300</y>
-      <width>67</width>
-      <height>17</height>
+      <x>90</x>
+      <y>30</y>
+      <width>171</width>
+      <height>27</height>
      </rect>
     </property>
     <property name="text">
-     <string>OUT</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>390</x>
-      <y>40</y>
-      <width>67</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>IN</string>
+     <string>Change next message</string>
     </property>
    </widget>
   </widget>
