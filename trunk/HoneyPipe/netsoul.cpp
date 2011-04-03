@@ -69,7 +69,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
     QString message("A>>> size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    //this->addActivity(message);
+    this->addActivity(message);
 
 
     if ((msg = this->isMessage(p)))
@@ -81,11 +81,6 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
             this->ui->changeMessage->setText("Change next message");
         }
         QString message("A>>> Got a ns message (" + QString(msg->c_str()) + ")");
-        this->addActivity(message);
-    }
-    else if (p.Size - sizeof(tcp) == 0  || (data[0] == '\r' && data[1] == '\n'))
-    {
-        QString message("Empty packet ! size = " + QString::number(p.Size - sizeof(tcp)));
         this->addActivity(message);
     }
     else
@@ -112,7 +107,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
 
     QString message("<<<B size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    //this->addActivity(message);
+    this->addActivity(message);
 
 
 
@@ -125,11 +120,6 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
             this->ui->changeMessage->setText("Change next message");
         }
         QString message("<<<B Got a ns message (" + QString(msg->c_str()) + ")");
-        this->addActivity(message);
-    }
-    else if (p.Size - sizeof(tcp) == 0)
-    {
-        QString message("Empty packet !");
         this->addActivity(message);
     }
     else
@@ -189,6 +179,7 @@ std::string *Netsoul::isMessage(Packet & p)
 
 void Netsoul::startWaitForMessage()
 {
-    this->state |= WaitingForMessage;
-     this->ui->changeMessage->setText("Stop wait for tamper");
+    // fait foirer les paquets ensuite faut faire ca de facon asynchrone
+    //this->state |= WaitingForMessage;
+    //this->ui->changeMessage->setText("Stop wait for tamper");
 }
