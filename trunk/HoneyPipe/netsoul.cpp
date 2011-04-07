@@ -177,3 +177,17 @@ void Netsoul::startWaitForMessage()
     //this->state |= WaitingForMessage;
     //this->ui->changeMessage->setText("Stop wait for tamper");
 }
+
+/*
+void Netsoul::replaceMessage(Packet & p, int pos, int len, std::string const & newMessage)
+{
+     char *data = ((char*)p.getBuffer()) + sizeof(tcp);
+
+     int i = pos, j = 0;
+     while (i < p.Size - sizeof(tcp))
+     {
+
+     }
+}
+
+*/

@@ -31,51 +31,76 @@ uint16_t Packet::checksum(uint16_t *buf, int nwords)
     return ~sum;
 }
 
+Packet * Packet::getPseudoIPTCPDATA()
+{
+    tcp* pTCP = static_cast<tcp*>(this->buffer);
+    Packet* p = new Packet();
+
+
+    // pseudo header ip
+    p->append(&pTCP->ip_src, 4);
+    p->append(&pTCP->ip_dst, 4);
+    uint8_t a = 0;
+    p->append(&a, 1);
+    p->append(&pTCP->ip_p, 1);
+//    uint16_t b = htons(sizeof(struct tcphdr));
+    uint16_t b = this->Size - sizeof(ip); // must be wrong with padding and maybe options
+    std::cout << "HEADER TCP + DATA SIZE = " << b << std::endl;
+    b = htons(b);
+    p->append(&b, 2);
+
+    // tcp header and data...
+    std::cout << "SIZES : sizeof(eth) = " << sizeof(eth) << " sizeof(ip) = " << sizeof(ip) << " sizeof(tcp) = " << sizeof(tcp) << std::endl;
+    p->append((uint8_t*)(this->buffer) + sizeof(ip), this->Size - sizeof(ip));
+
+    return p;
+}
+
 void Packet::computeChecksum()
 {
     tcp* pTCP = static_cast<tcp*>(this->buffer);
     unsigned char * packet = ((unsigned char *)this->buffer) + sizeof(eth);
 
-    pTCP->ip_sum = 0;
-    pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
-
- /*
-    csum_tcpudp_magic(saddr,daddr,len,IPPROTO_TCP,base);
-
-    static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
-                                            unsigned short len,
-                                            unsigned short proto,
-                                            __wsum sum)
-    {
-            return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
-    }
-static inline __sum16 csum_fold(__wsum sum)
-{
-        asm("addl %1, %0                ;\n"
-            "adcl $0xffff, %0   ;\n"
-            : "=r" (sum)
-            : "r" ((__force u32)sum << 16),
-              "0" ((__force u32)sum & 0xffff0000));
-        return (__force __sum16)(~(__force u32)sum >> 16);
-}
-static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
-                                        unsigned short len,
-                                        unsigned short proto,
-                                        __wsum sum)
-{
-        asm("addl %1, %0        ;\n"
-            "adcl %2, %0        ;\n"
-            "adcl %3, %0        ;\n"
-            "adcl $0, %0        ;\n"
-            : "=r" (sum)
-            : "g" (daddr), "g"(saddr),
-              "g" ((len + proto) << 8), "0" (sum));
-        return sum;
-}
+    //pTCP->ip_sum = 0;
+    //pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
 
 
+    Packet * p = this->getPseudoIPTCPDATA();
+    checktcp * test = (checktcp*)(p->getBuffer());
 
-    */
+    std::cout << "OLD (REAL) " << pTCP->check << " & (COPIED) " << test->tcp.check << std::endl;
+    test->tcp.check = 0;
+    pTCP->check = checksum((uint16_t*)p->getBuffer(), p->Size >> 1);
+    std::cout << "NEW (REAL)" << pTCP->check << " with htons " << htons(pTCP->check) << std::endl;
+/*
+    Packet p;
+    p.append(&pTCP->ip_src, 4);
+    p.append(&pTCP->ip_dst, 4);
+    unsigned char a = 0;
+    p.append(&a, 1);
+    a = 6;
+    p.append(&a, 1);
+    uint16_t b = htons(sizeof(struct tcphdr));
+    p.append(&b, 1);
+    p.append(((unsigned char *)this->buffer) + sizeof(ip), sizeof(tcphdr) + Size - sizeof(ip) - sizeof(tcphdr));
+
+    checktcp test;
+    memcpy(&test, ((unsigned char *)this->buffer), sizeof(test));
+*/
+    //checktcp test;
+
+    //test.source = pTCP->ip_src;
+    //test.destination = pTCP->ip_dst;
+    //test.useless = 0;
+    //test.protocol = IPPROTO_TCP;
+    //test.length = htons(sizeof(struct tcphdr));
+    //test.tcp = &(tcphdr)((unsigned char *)this->buffer) + sizeof(ip);
+    //memcpy(&test.tcp, ((unsigned char *)this->buffer) + sizeof(ip), sizeof(tcphdr));
+
+
+
+//test.tcp.ack_seq = pTCP
+
 }
 
 void eth::craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac)
@@ -99,12 +124,47 @@ void arp::craftARP(uint8_t *srcmac, uint8_t *srcip,
     memcpy(this->ar_tip, dstip, 4);
 }
 
-void ip::craftIP()
+void ip::craftIP(uint8_t *srcmac, uint32_t srcip,
+                 uint8_t *dstmac, uint32_t dstip)
 {
-
+    this->craftETH(0x0800, srcmac, dstmac);
+    this->ip_hl = 5;
+    this->ip_v = 4;
+    this->ip_tos = 0;
+    this->ip_len = htons(40 + 20); // 16 without options ??
+    this->ip_id = htons(1337);
+    this->ip_off = 0x40;
+    this->ip_ttl = 255;
+    this->ip_p = 0; // to set later before compute the checksum
+    this->ip_sum = 0;
+    this->ip_src = srcip;
+    this->ip_dst = dstip;
 }
 
-void tcp::craftTCP()
+void tcp::craftTCP(uint8_t *srcmac, uint32_t srcip,
+                   uint8_t *dstmac, uint32_t dstip)
 {
 
+    this->craftIP(srcmac, srcip, dstmac, dstip);
+    this->ip_p = IPPROTO_TCP;
+    this->ip_sum = this->checksumIP((uint16_t *)( ((unsigned char *)this) + sizeof(eth)), 20 >> 1);
+
+    this->source = htons(1337);
+    this->dest = htons(1337);
+    this->seq = htonl(40);
+    this->ack_seq = htonl(5);
+    this->res1 = 5;
+    this->doff = 0x6;
+
+    this->fin = 0;
+    this->syn = 0;
+    this->rst = 0;
+    this->psh = 0;
+    this->ack = 1;
+    this->urg = 0;
+    //this->res2 = 0;
+    this->window = htons(20);
+    this->check = 0;
+    this->urg_ptr = 0;
+    //this->options = 0;
 }
