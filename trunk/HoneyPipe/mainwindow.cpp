@@ -109,7 +109,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
     std::cout << "============== New Packet ==============" << std::endl;
-    dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("============== New Packet ==============");
+    //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("============== New Packet ==============");
 
     /*
     uint32_t ips = pIP->ip_src;
@@ -124,10 +124,10 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
 
     if (pIP->isTCP() && p.Size >= sizeof(tcp))
     {
-        dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("OLD " + QString::number(pTCP->check)).toStdString().c_str());
+        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("OLD " + QString::number(pTCP->check)).toStdString().c_str());
         p.computeChecksum();
-        dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("NEW " + QString::number(pTCP->check)).toStdString().c_str());
-        dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("-----------");
+        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("NEW " + QString::number(pTCP->check)).toStdString().c_str());
+        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("-----------");
 
         // Detect protocol
         if (this->ui->cbProtocol->currentText() == "Netsoul")
