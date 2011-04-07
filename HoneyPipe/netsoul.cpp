@@ -90,7 +90,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
             memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
             buffer[p.Size - sizeof(tcp)] = 0;
             QString  tmp((const char *)buffer);
-            QString res = tmp.replace(QString(msg->c_str()), "TEST");
+            QString res = tmp.replace(QString(msg->c_str()), "CACA");
             this->addActivity(QString::number(res.length()).toStdString().c_str());
             p.reduce(p.Size - sizeof(tcp));
             p.append(res.toStdString().c_str(), res.length());
