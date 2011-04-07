@@ -26,7 +26,7 @@ public:
     virtual int sendTargetAToTargetB(Packet & p);
     virtual int sendTargetBToTargetA(Packet & p);
     std::string *isMessage(Packet & p);
-    void addActivity(QString & message);
+    void addActivity(const char * message);
 private:
     Ui::Netsoul *ui;
     uint16_t portA;
