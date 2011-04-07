@@ -110,6 +110,18 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
 
     std::cout << "============== New Packet ==============" << std::endl;
     dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("============== New Packet ==============");
+
+    /*
+    uint32_t ips = pIP->ip_src;
+    printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
+    printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipA;
+    printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
+    printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
+    */
+    //if (pIP->isTCP() && p.Size >= sizeof(tcp))
+    //    std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
+    //    << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+
     if (pIP->isTCP() && p.Size >= sizeof(tcp))
     {
         dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("OLD " + QString::number(pTCP->check)).toStdString().c_str());
@@ -125,7 +137,6 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
         // Process packet
         if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
         {
-
             if (isFromTarget)
                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
             else
@@ -202,21 +213,11 @@ void MainWindow::play()
                 s.Read(p, true);
 
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
-                tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
                 // AFFICHAGE DEBUG
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
                 {
-                    /*
-                    uint32_t ips = pIP->ip_src;
-                    printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
-                    printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipA;
-                    printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
-                    printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
-                    */
-                    //if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                    //    std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
-                    //    << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+
                 }
                 // ! FIN AFFICHAGE !
 

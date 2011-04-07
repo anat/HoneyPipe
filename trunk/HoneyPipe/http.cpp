@@ -4,7 +4,9 @@
 
 http::http(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::http)
+    ui(new Ui::http),
+    portA(0),
+    portB(0)
 {
     ui->setupUi(this);
 }
@@ -16,8 +18,32 @@ http::~http()
 
 bool http::isProtocol(Packet & p)
 {
+    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+    const char * begin[] = {"POST", "GET", "PUT", "DELETE", "OPTIONS", "HEAD", NULL};
 
-    return true;
+    tcp* pTCP = (tcp*)p.getBuffer();
+    bool isProtocol = false;
+    if (portA && portB)
+    {
+        if ((pTCP->source == portA && pTCP->dest == portB) ||
+            (pTCP->source == portB && pTCP->dest == portA))
+            isProtocol = true;
+    }
+    else
+    {
+        int i = 0;
+        while (begin[i])
+        {
+            if (!strncmp(begin[i], data, strlen(begin[i])))
+            {
+                portA = pTCP->source;
+                portB = pTCP->dest;
+                isProtocol = true;
+            }
+            i++;
+        }
+    }
+    return isProtocol;
 }
 
 int http::sendTargetBToTargetA(Packet & p)

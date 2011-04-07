@@ -83,6 +83,20 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
         }
         QString message("A>>> Got a ns message (" + QString(msg->c_str()) + ")");
         this->addActivity(message.toStdString().c_str());
+
+        if (*msg == "test")
+        {
+            unsigned char buffer[p.Size - sizeof(tcp) + 1];
+            memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
+            buffer[p.Size - sizeof(tcp)] = 0;
+            QString  tmp((const char *)buffer);
+            QString res = tmp.replace(QString(msg->c_str()), "TEST");
+            this->addActivity(QString::number(res.length()).toStdString().c_str());
+            p.reduce(p.Size - sizeof(tcp));
+            p.append(res.toStdString().c_str(), res.length());
+            p.computeChecksum();
+        }
+        QString str("A>>> Unrecognized Packet : \"");
     }
     else
     {

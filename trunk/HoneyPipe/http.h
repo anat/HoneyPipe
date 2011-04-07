@@ -22,6 +22,8 @@ public:
 
 private:
     Ui::http *ui;
+    uint16_t portA;
+    uint16_t portB;
 };
 
 #endif // HTTP_H
