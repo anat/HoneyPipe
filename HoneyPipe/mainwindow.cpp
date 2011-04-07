@@ -108,6 +108,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
     ip*  pIP = static_cast<ip*>(p.getBuffer());
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
+    std::cout << "============== New Packet ==============" << std::endl;
     if (pIP->isTCP() && p.Size >= sizeof(tcp))
     {
         // Detect protocol
@@ -118,6 +119,14 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
         // Process packet
         if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
         {
+            QString str("OLD" + QString::number(pTCP->check));
+             dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(str);
+
+            p.computeChecksum();
+            QString str2("NEW" + QString::number(pTCP->check));
+             dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(str2);
+             QString str3("------------");
+              dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(str3);
             if (isFromTarget)
                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
             else
@@ -132,6 +141,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
     else
         memcpy(pETH->ar_tha, dstMac, 6);
     s.Write(p);
+    std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
 }
 
 
@@ -171,8 +181,18 @@ void MainWindow::play()
 
         uint8_t macA[6], macB[6];
 
-        mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), (uint8_t *)macA);
-        mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), (uint8_t *)macB);
+        mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), macA);
+        mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), macB);
+
+        //Packet test;
+        //test.append(new tcp, sizeof(tcp));
+
+        //tcp* testTCP = (tcp*)test.getBuffer();
+        //testTCP->craftTCP(macA, ipA, macB, ipB);
+        //test.append("jesusjesusjesusjesus", 20);
+        //s.Write(test);
+        //this->state -= Playing;
+
 
         while (this->state & Playing)
         {
@@ -181,7 +201,6 @@ void MainWindow::play()
             {
                 Packet p;
                 s.Read(p, true);
-                //p.computeChecksum();
 
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
                 tcp* pTCP = static_cast<tcp*>(p.getBuffer());
@@ -189,7 +208,6 @@ void MainWindow::play()
                 // AFFICHAGE DEBUG
                 if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
                 {
-                    std::cout << "============== New Packet ==============" << std::endl;
                     /*
                     uint32_t ips = pIP->ip_src;
                     printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
@@ -197,9 +215,9 @@ void MainWindow::play()
                     printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
                     printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
                     */
-                    if (pIP->isTCP() && p.Size >= sizeof(tcp))
-                        std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
-                        << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+                    //if (pIP->isTCP() && p.Size >= sizeof(tcp))
+                    //    std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
+                    //    << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
                 }
                 // ! FIN AFFICHAGE !
 
@@ -207,9 +225,6 @@ void MainWindow::play()
                     this->newPacket(s, p, true, macB);
                 else if (pIP->ip_dst == ipA) // from "router" to "client"
                     this->newPacket(s, p, false, macA);
-
-                if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
-                    std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);

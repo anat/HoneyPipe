@@ -5,6 +5,9 @@
 # include <string.h>
 # include <stdint.h>
 # include <arpa/inet.h>
+// For QT's Funny parser to work
+//# define __attribute__(spec)
+#include <netinet/tcp.h>
 
 class Packet
 {
@@ -26,6 +29,7 @@ public:
     }
     void computeChecksum();
     void * getBuffer();
+    Packet * getPseudoIPTCPDATA();
     uint32_t Size;
 };
 
@@ -80,7 +84,17 @@ struct ip : public eth
   uint32_t ip_src;
   uint32_t ip_dst;
   bool isTCP() {return (this->ip_p == IPPROTO_TCP);}
-  void craftIP();
+  void craftIP(uint8_t *srcmac, uint32_t srcip, uint8_t *dstmac, uint32_t dstip);
+
+  uint16_t checksumIP(uint16_t *buf, int nwords)
+  {
+      uint32_t sum;
+      for (sum = 0; nwords > 0; nwords--)
+          sum += *buf++;
+      sum = (sum >> 16) + (sum & 0xffff);
+      sum += (sum >> 16);
+      return ~sum;
+  }
 } __attribute__ ((packed));
 
 
@@ -93,20 +107,57 @@ struct tcp : public ip
   uint32_t seq;
   uint32_t ack_seq;
   uint16_t res1:4;
-  uint16_t doff:4;
+  //uint16_t doff:4;
+  uint16_t doff:6;
   uint16_t fin:1;
   uint16_t syn:1;
   uint16_t rst:1;
   uint16_t psh:1;
   uint16_t ack:1;
   uint16_t urg:1;
-  uint16_t res2:2;
+  //uint16_t res2:2;
   uint16_t window;
   uint16_t check;
   uint16_t urg_ptr;
-  void craftTCP();
+  //uint32_t options;
+  void craftTCP(uint8_t *srcmac, uint32_t srcip, uint8_t *dstmac, uint32_t dstip);
 } __attribute__ ((packed));
 
+/** TCP Header Format
 
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |          Source Port          |       Destination Port        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        Sequence Number                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Acknowledgment Number                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Data |           |U|A|P|R|S|F|                               |
+   | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+   |       |           |G|K|H|T|N|N|                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Checksum            |         Urgent Pointer        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             data                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+
+struct checktcp {
+    uint32_t source;
+    uint32_t destination;
+    unsigned char useless;
+    unsigned char protocol;
+    uint16_t length;
+    struct tcphdr tcp;
+} __attribute__ ((packed));
+
+struct tcpack : public tcp
+{
+    static tcpack* craftACK(){return NULL;}
+};
 
 #endif // PACKET_H
