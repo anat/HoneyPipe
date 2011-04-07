@@ -52,9 +52,10 @@ bool Netsoul::isProtocol(Packet & p)
     return isProtocol;
 }
 
-void Netsoul::addActivity(QString & message)
+void Netsoul::addActivity(const char * message)
 {
-    this->ui->activity->setPlainText("\n- " + message + this->ui->activity->toPlainText());
+    QString mess(message);
+    this->ui->activity->setPlainText("\n- " + mess + this->ui->activity->toPlainText());
 }
 
 
@@ -69,7 +70,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
     QString message("A>>> size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    this->addActivity(message);
+    this->addActivity(message.toStdString().c_str());
 
 
     if ((msg = this->isMessage(p)))
@@ -81,7 +82,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
             this->ui->changeMessage->setText("Change next message");
         }
         QString message("A>>> Got a ns message (" + QString(msg->c_str()) + ")");
-        this->addActivity(message);
+        this->addActivity(message.toStdString().c_str());
     }
     else
     {
@@ -91,7 +92,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
         QString str("A>>> Unrecognized Packet : \"");
         str += (const char *)buffer;
         str += "\"";
-        this->addActivity(str);
+        this->addActivity(str.toStdString().c_str());
     }
     return 0;
 }
@@ -104,7 +105,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
 
     QString message("<<<B size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    this->addActivity(message);
+    this->addActivity(message.toStdString().c_str());
 
 
 
@@ -117,7 +118,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
             this->ui->changeMessage->setText("Change next message");
         }
         QString message("<<<B Got a ns message (" + QString(msg->c_str()) + ")");
-        this->addActivity(message);
+        this->addActivity(message.toStdString().c_str());
     }
     else
     {
@@ -128,7 +129,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
         QString str("<<<B Unrecognized Packet : \"");
         str += (const char *)buffer;
         str += "\"";
-        this->addActivity(str);
+        this->addActivity(str.toStdString().c_str());
     }
     return 0;
 }

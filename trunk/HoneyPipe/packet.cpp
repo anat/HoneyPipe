@@ -36,7 +36,8 @@ Packet * Packet::getPseudoIPTCPDATA()
     tcp* pTCP = static_cast<tcp*>(this->buffer);
     Packet* p = new Packet();
 
-
+    std::cout << "[ip.len]=" << htons(pTCP->ip_len) << " [ip+data]=" << this->Size - sizeof(eth) << "- ip->hl" << pTCP->ip_hl
+            << " tcp.data_offset=" << pTCP->doff << std::endl;
     // pseudo header ip
     p->append(&pTCP->ip_src, 4);
     p->append(&pTCP->ip_dst, 4);
@@ -44,14 +45,17 @@ Packet * Packet::getPseudoIPTCPDATA()
     p->append(&a, 1);
     p->append(&pTCP->ip_p, 1);
 //    uint16_t b = htons(sizeof(struct tcphdr));
-    uint16_t b = this->Size - sizeof(ip); // must be wrong with padding and maybe options
+    uint16_t b = htons(pTCP->ip_len) - (sizeof(ip) - sizeof(eth));//this->Size - sizeof(ip); // must be wrong with padding and maybe options
     std::cout << "HEADER TCP + DATA SIZE = " << b << std::endl;
     b = htons(b);
     p->append(&b, 2);
 
+    b = htons(b);
     // tcp header and data...
-    std::cout << "SIZES : sizeof(eth) = " << sizeof(eth) << " sizeof(ip) = " << sizeof(ip) << " sizeof(tcp) = " << sizeof(tcp) << std::endl;
-    p->append((uint8_t*)(this->buffer) + sizeof(ip), this->Size - sizeof(ip));
+    p->append((uint8_t*)(this->buffer) + sizeof(ip), b);
+    uint8_t odd = 0;
+    if (p->Size % 2 != 0)
+        p->append(&odd, 1);
 
     return p;
 }
@@ -61,46 +65,18 @@ void Packet::computeChecksum()
     tcp* pTCP = static_cast<tcp*>(this->buffer);
     unsigned char * packet = ((unsigned char *)this->buffer) + sizeof(eth);
 
-    //pTCP->ip_sum = 0;
-    //pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
+    pTCP->ip_sum = 0;
+    pTCP->ip_sum = this->checksum((uint16_t *)(packet), 20 >> 1);
 
 
     Packet * p = this->getPseudoIPTCPDATA();
     checktcp * test = (checktcp*)(p->getBuffer());
 
-    std::cout << "OLD (REAL) " << pTCP->check << " & (COPIED) " << test->tcp.check << std::endl;
+    std::cout << "OLD (REAL) -" << pTCP->check << "-  (COPIED) " << test->tcp.check << std::endl;
     test->tcp.check = 0;
     pTCP->check = checksum((uint16_t*)p->getBuffer(), p->Size >> 1);
-    std::cout << "NEW (REAL)" << pTCP->check << " with htons " << htons(pTCP->check) << std::endl;
-/*
-    Packet p;
-    p.append(&pTCP->ip_src, 4);
-    p.append(&pTCP->ip_dst, 4);
-    unsigned char a = 0;
-    p.append(&a, 1);
-    a = 6;
-    p.append(&a, 1);
-    uint16_t b = htons(sizeof(struct tcphdr));
-    p.append(&b, 1);
-    p.append(((unsigned char *)this->buffer) + sizeof(ip), sizeof(tcphdr) + Size - sizeof(ip) - sizeof(tcphdr));
-
-    checktcp test;
-    memcpy(&test, ((unsigned char *)this->buffer), sizeof(test));
-*/
-    //checktcp test;
-
-    //test.source = pTCP->ip_src;
-    //test.destination = pTCP->ip_dst;
-    //test.useless = 0;
-    //test.protocol = IPPROTO_TCP;
-    //test.length = htons(sizeof(struct tcphdr));
-    //test.tcp = &(tcphdr)((unsigned char *)this->buffer) + sizeof(ip);
-    //memcpy(&test.tcp, ((unsigned char *)this->buffer) + sizeof(ip), sizeof(tcphdr));
-
-
-
-//test.tcp.ack_seq = pTCP
-
+    std::cout << "NEW (REAL) -" << pTCP->check << "-" << std::endl;
+    delete p;
 }
 
 void eth::craftETH(uint16_t type, uint8_t *srcmac, uint8_t *dstmac)
