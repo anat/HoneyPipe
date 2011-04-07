@@ -1,9 +1,12 @@
 #include "netsoul.h"
 #include "ui_netsoul.h"
 #include <QtGui/QInputDialog>
+#include <QtCore/QDate>
 #include <string>
 #include <cstdio>
+#include <sstream>
 #include "packet.h"
+
 Netsoul::Netsoul(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::Netsoul),
@@ -55,7 +58,7 @@ bool Netsoul::isProtocol(Packet & p)
 void Netsoul::addActivity(const char * message)
 {
     QString mess(message);
-    this->ui->activity->setPlainText("\n- " + mess + this->ui->activity->toPlainText());
+    this->ui->activity->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activity->toPlainText());
 }
 
 
@@ -70,7 +73,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
     QString message("A>>> size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    this->addActivity(message.toStdString().c_str());
+    //this->addActivity(message.toStdString().c_str());
 
 
     if ((msg = this->isMessage(p)))
@@ -81,7 +84,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
             this->state -= WaitingForMessage;
             this->ui->changeMessage->setText("Change next message");
         }
-        QString message("A>>> Got a ns message (" + QString(msg->c_str()) + ")");
+        QString message("A>>> Message from " + QString(this->getUser(p)->c_str()) + " -" + QString(msg->c_str()) + "-");
         this->addActivity(message.toStdString().c_str());
 
         if (*msg == "test")
@@ -106,7 +109,7 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
         QString str("A>>> Unrecognized Packet : \"");
         str += (const char *)buffer;
         str += "\"";
-        this->addActivity(str.toStdString().c_str());
+        //this->addActivity(str.toStdString().c_str());
     }
     return 0;
 }
@@ -119,7 +122,7 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
 
     QString message("<<<B size = " + QString::number(p.Size - sizeof(tcp))
                     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    this->addActivity(message.toStdString().c_str());
+    //this->addActivity(message.toStdString().c_str());
 
 
 
@@ -131,11 +134,12 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
             this->state -= WaitingForMessage;
             this->ui->changeMessage->setText("Change next message");
         }
-        QString message("<<<B Got a ns message (" + QString(msg->c_str()) + ")");
+        QString message("<<<B Message -" + QString(msg->c_str()) + "-");
         this->addActivity(message.toStdString().c_str());
     }
     else
     {
+
         char * data = ((char*)p.getBuffer()) + sizeof(tcp);
         char buffer[p.Size - sizeof(tcp) - 1];
         memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
@@ -143,7 +147,8 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
         QString str("<<<B Unrecognized Packet : \"");
         str += (const char *)buffer;
         str += "\"";
-        this->addActivity(str.toStdString().c_str());
+        //this->addActivity(str.toStdString().c_str());
+
     }
     return 0;
 }
@@ -185,6 +190,25 @@ std::string *Netsoul::isMessage(Packet & p)
     }
     return NULL;
 }
+
+std::string * Netsoul::getUser(Packet & p)
+{
+    char *data = ((char*)p.getBuffer()) + sizeof(tcp);
+    std::string *str = new std::string();
+
+    unsigned char buffer[p.Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
+    buffer[p.Size - sizeof(tcp)] = 0;
+    std::string tmp((const char *)buffer);
+
+    std::string part;
+     std::stringstream  currentCMD(tmp);
+     for(int i = 0; i < 4; i++)
+        std::getline(currentCMD, part, ':');
+    *str = part;
+    return str;
+}
+
 
 void Netsoul::startWaitForMessage()
 {

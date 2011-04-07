@@ -27,6 +27,7 @@ public:
     virtual int sendTargetBToTargetA(Packet & p);
     std::string *isMessage(Packet & p);
     void addActivity(const char * message);
+    std::string * getUser(Packet & p);
 private:
     Ui::Netsoul *ui;
     uint16_t portA;
