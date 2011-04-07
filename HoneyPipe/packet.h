@@ -17,15 +17,18 @@ private:
 public:
     Packet();
     ~Packet();
-
     template<typename T>
-    int append(T* data, int size)
+    inline int append(T* data, int size)
     {
         this->buffer = realloc(this->buffer, this->Size + size);
         memcpy(((char *)this->buffer) + this->Size, data, size);
         this->Size += size;
-        //std::cout << "Packet Size = " << this->Size << std::endl;
         return this->Size;
+    }
+    inline void reduce(int size)
+    {
+        this->buffer = realloc(this->buffer, this->Size - size);
+        this->Size -= size;
     }
     void computeChecksum();
     void * getBuffer();
