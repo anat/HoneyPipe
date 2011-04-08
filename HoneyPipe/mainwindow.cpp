@@ -14,7 +14,7 @@
 #include "rsock.h"
 #include "http.h"
 #include "IProtocol.hpp"
-
+#include "changemessage.h"
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
@@ -67,6 +67,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
     system("pkill fwdPacket");
+
 }
 
 
@@ -109,48 +110,32 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
 
     std::cout << "============== New Packet ==============" << std::endl;
-    //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("============== New Packet ==============");
-
-    /*
-    uint32_t ips = pIP->ip_src;
-    printf("- Src %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = pIP->ip_dst;
-    printf("- Dst %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipA;
-    printf("- ipA %d.%d.%d.%d ", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff)); ips = ipB;
-    printf("- ipB %d.%d.%d.%d -\n", ((ips >> 0) & 0xff), ((ips >> 8) & 0xff), ((ips >> 16) & 0xff), ((ips >> 24) & 0xff));
-    */
-    //if (pIP->isTCP() && p.Size >= sizeof(tcp))
-    //    std::cout << "ACK = " << pTCP->ack << "\n PORT : src " << htons(pTCP->source) << " dst " << htons(pTCP->dest)
-    //    << "seq : " << pTCP->seq << "ack : " << pTCP->ack_seq << std::endl;
+    PacketState state = RoutePacket;
 
     if (pIP->isTCP() && p.Size >= sizeof(tcp))
     {
-        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("OLD " + QString::number(pTCP->check)).toStdString().c_str());
-        p.computeChecksum();
-        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity(QString("NEW " + QString::number(pTCP->check)).toStdString().c_str());
-        //dynamic_cast<Netsoul *>(this->currentProtocol)->addActivity("-----------");
-
         // Detect protocol
         if (this->ui->cbProtocol->currentText() == "Netsoul")
             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
         if (isCurrentProtocol)
-            std::cout << "\t******* " << this->ui->cbProtocol->currentText().toStdString() << " *******" << std::endl;
+            std::cout << "\t************** " << this->ui->cbProtocol->currentText().toStdString() << " **************" << std::endl;
+
         // Process packet
         if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
         {
             if (isFromTarget)
-                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
+                state = dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
             else
-                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
+                state = dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
         }
     }
     else
         std::cout << "from client not tcp" << std::endl;
     memcpy(pETH->ar_sha, pETH->ar_tha, 6);
-    if (isFromTarget)
-        memcpy(pETH->ar_tha, dstMac, 6);
-    else
-        memcpy(pETH->ar_tha, dstMac, 6);
-    s.Write(p);
+    memcpy(pETH->ar_tha, dstMac, 6);
+    if (state == RoutePacket)
+        s.Write(p);
+
     std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
 }
 
@@ -211,16 +196,7 @@ void MainWindow::play()
             {
                 Packet p;
                 s.Read(p, true);
-
                 ip*  pIP = static_cast<ip*>(p.getBuffer());
-
-                // AFFICHAGE DEBUG
-                if ((pIP->ip_src == ipA && pIP->ip_dst != myip) || (pIP->ip_dst == ipA))
-                {
-
-                }
-                // ! FIN AFFICHAGE !
-
                 if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
                     this->newPacket(s, p, true, macB);
                 else if (pIP->ip_dst == ipA) // from "router" to "client"
@@ -228,7 +204,7 @@ void MainWindow::play()
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
-            usleep(10); // sleep 1ms
+            usleep(1); // sleep maybe useless
         }
         if (this->state & Playing)
         {
