@@ -76,14 +76,7 @@ uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interfac
             return 0;
         }
     }
-    std::cout << "Exit" << std::endl;
-
-    //struct timeval tv;
-    //struct timezone tz;
-    //gettimeofday(&tv, &tz);
-    //std::cout << tv.tv_usec << std::endl;
     return 0;
-
 }
 
 

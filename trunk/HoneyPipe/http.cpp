@@ -46,7 +46,7 @@ bool http::isProtocol(Packet & p)
     return isProtocol;
 }
 
-int http::sendTargetBToTargetA(Packet & p)
+PacketState http::sendTargetBToTargetA(Packet & p)
 {
 
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
@@ -56,10 +56,10 @@ int http::sendTargetBToTargetA(Packet & p)
     {
         this->ui->pte->setPlainText(data);
     }
-    return 0;
+    return RoutePacket;
 }
 
-int http::sendTargetAToTargetB(Packet & p)
+PacketState http::sendTargetAToTargetB(Packet & p)
 {
 
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
@@ -69,5 +69,5 @@ int http::sendTargetAToTargetB(Packet & p)
     {
         this->ui->pte->setPlainText(data);
     }
-    return 0;
+    return RoutePacket;
 }

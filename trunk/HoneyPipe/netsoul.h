@@ -23,8 +23,8 @@ public:
     explicit Netsoul(QWidget *parent = 0);
     ~Netsoul();
     virtual bool isProtocol(Packet & p);
-    virtual int sendTargetAToTargetB(Packet & p);
-    virtual int sendTargetBToTargetA(Packet & p);
+    virtual PacketState sendTargetAToTargetB(Packet & p);
+    virtual PacketState sendTargetBToTargetA(Packet & p);
     std::string *isMessage(Packet & p);
     void addActivity(const char * message);
     std::string * getUser(Packet & p);
@@ -32,9 +32,10 @@ private:
     Ui::Netsoul *ui;
     uint16_t portA;
     uint16_t portB;
-    uint32_t seq;
-    uint32_t ack;
+    uint32_t deltaA;
+    uint32_t deltaB;
     int state;
+    Packet waitingPacket;
 public slots:
     void startWaitForMessage();
 };

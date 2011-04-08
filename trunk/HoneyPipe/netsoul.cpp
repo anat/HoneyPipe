@@ -12,6 +12,8 @@ Netsoul::Netsoul(QWidget *parent) :
         ui(new Ui::Netsoul),
 	portA(0),
         portB(0),
+        deltaA(0),
+        deltaB(0),
         state(0)
 {
     ui->setupUi(this);
@@ -26,7 +28,6 @@ Netsoul::~Netsoul()
 
 bool Netsoul::isProtocol(Packet & p)
 {
-
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
 
@@ -64,7 +65,7 @@ void Netsoul::addActivity(const char * message)
 
 
 
-int Netsoul::sendTargetAToTargetB(Packet & p)
+PacketState Netsoul::sendTargetAToTargetB(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     std::string * msg;
@@ -72,10 +73,12 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
 
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
     QString message("A>>> size = " + QString::number(p.Size - sizeof(tcp))
-                    + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    //this->addActivity(message.toStdString().c_str());
+    + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = "
+    + QString::number(htonl(pTCP->seq)) + "\tack = "
+    + QString::number(htonl(pTCP->ack_seq)));
+    this->addActivity(message.toStdString().c_str());
 
-
+    bool nextDelta = 0;
     if ((msg = this->isMessage(p)))
     {
         if (this->state & WaitingForMessage)
@@ -93,11 +96,14 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
             memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
             buffer[p.Size - sizeof(tcp)] = 0;
             QString  tmp((const char *)buffer);
-            QString res = tmp.replace(QString(msg->c_str()), "CACA");
-            this->addActivity(QString::number(res.length()).toStdString().c_str());
+            QString res = tmp.replace(QString(msg->c_str()), "CACA2");
+            this->addActivity(res.toStdString().c_str());
+            this->addActivity("NEW MESSAGE :");
             p.reduce(p.Size - sizeof(tcp));
             p.append(res.toStdString().c_str(), res.length());
-            p.computeChecksum();
+            pTCP->ip_len = htons(htons(pTCP->ip_len) + 1);
+            nextDelta = 1;
+            //deltaA += 1;
         }
         QString str("A>>> Unrecognized Packet : \"");
     }
@@ -111,18 +117,24 @@ int Netsoul::sendTargetAToTargetB(Packet & p)
         str += "\"";
         //this->addActivity(str.toStdString().c_str());
     }
-    return 0;
+    pTCP->seq = htonl(htonl(pTCP->seq) + deltaA);
+    pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + deltaB);
+    if (nextDelta)
+        deltaA += nextDelta;
+    p.computeChecksum();
+    return RoutePacket;
 }
 
 
-int Netsoul::sendTargetBToTargetA(Packet & p)
+PacketState Netsoul::sendTargetBToTargetA(Packet & p)
 {
     std::string * msg;
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
-
     QString message("<<<B size = " + QString::number(p.Size - sizeof(tcp))
-                    + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = " + QString::number(pTCP->seq) + "\tack = " + QString::number(pTCP->ack_seq));
-    //this->addActivity(message.toStdString().c_str());
+    + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = "
+    + QString::number(htonl(pTCP->seq)) + "\tack = "
+    + QString::number(htonl(pTCP->ack_seq)));
+    this->addActivity(message.toStdString().c_str());
 
 
 
@@ -148,9 +160,11 @@ int Netsoul::sendTargetBToTargetA(Packet & p)
         str += (const char *)buffer;
         str += "\"";
         //this->addActivity(str.toStdString().c_str());
-
     }
-    return 0;
+    pTCP->seq = htonl(htonl(pTCP->seq) + deltaB);
+    pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) - deltaA);
+    p.computeChecksum();
+    return RoutePacket;
 }
 
 std::string *Netsoul::isMessage(Packet & p)
@@ -194,7 +208,7 @@ std::string *Netsoul::isMessage(Packet & p)
 std::string * Netsoul::getUser(Packet & p)
 {
     char *data = ((char*)p.getBuffer()) + sizeof(tcp);
-    std::string *str = new std::string();
+    std::string *str = new std::string("");
 
     unsigned char buffer[p.Size - sizeof(tcp) + 1];
     memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
@@ -217,16 +231,3 @@ void Netsoul::startWaitForMessage()
     //this->ui->changeMessage->setText("Stop wait for tamper");
 }
 
-/*
-void Netsoul::replaceMessage(Packet & p, int pos, int len, std::string const & newMessage)
-{
-     char *data = ((char*)p.getBuffer()) + sizeof(tcp);
-
-     int i = pos, j = 0;
-     while (i < p.Size - sizeof(tcp))
-     {
-
-     }
-}
-
-*/

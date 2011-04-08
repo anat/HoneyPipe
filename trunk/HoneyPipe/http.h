@@ -16,8 +16,8 @@ class http : public QMainWindow,  private IProtocol
 public:
     explicit http(QWidget *parent = 0);
     virtual bool isProtocol(Packet & p);
-    virtual int sendTargetAToTargetB(Packet & p);
-    virtual int sendTargetBToTargetA(Packet & p);
+    virtual PacketState sendTargetAToTargetB(Packet & p);
+    virtual PacketState sendTargetBToTargetA(Packet & p);
     ~http();
 
 private:
