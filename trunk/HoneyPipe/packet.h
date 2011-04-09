@@ -27,13 +27,14 @@ public:
     }
     inline void reduce(int size)
     {
-        this->buffer = realloc(this->buffer, this->Size - size);
         this->Size -= size;
+        this->buffer = realloc(this->buffer, this->Size);
     }
     void computeChecksum();
     void * getBuffer();
     Packet * getPseudoIPTCPDATA();
     uint32_t Size;
+    bool Store;
 };
 
 struct eth

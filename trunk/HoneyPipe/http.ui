@@ -35,7 +35,7 @@
     </property>
     <property name="url">
      <url>
-      <string>http://www.google.fr/</string>
+      <string>about:blank</string>
      </url>
     </property>
    </widget>
