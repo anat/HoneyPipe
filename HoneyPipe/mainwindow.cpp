@@ -67,7 +67,6 @@ MainWindow::~MainWindow()
 {
     delete ui;
     system("pkill fwdPacket");
-
 }
 
 
@@ -102,21 +101,20 @@ void MainWindow::setSource()
     }
 }
 
-void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t* dstMac)
+void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t* dstMac)
 {
     bool isCurrentProtocol = false;
-    eth* pETH = static_cast<eth*>(p.getBuffer());
-    ip*  pIP = static_cast<ip*>(p.getBuffer());
-    tcp* pTCP = static_cast<tcp*>(p.getBuffer());
+    eth* pETH = static_cast<eth*>(p->getBuffer());
+    ip*  pIP = static_cast<ip*>(p->getBuffer());
+    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
 
     std::cout << "============== New Packet ==============" << std::endl;
-    PacketState state = RoutePacket;
 
-    if (pIP->isTCP() && p.Size >= sizeof(tcp))
+    if (pIP->isTCP() && p->Size >= sizeof(tcp))
     {
         // Detect protocol
         if (this->ui->cbProtocol->currentText() == "Netsoul")
-            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(p);
+            isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(*p);
         if (isCurrentProtocol)
             std::cout << "\t************** " << this->ui->cbProtocol->currentText().toStdString() << " **************" << std::endl;
 
@@ -124,17 +122,25 @@ void MainWindow::newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t
         if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
         {
             if (isFromTarget)
-                state = dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(p);
+                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetAToTargetB(*p);
             else
-                state = dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(p);
+                dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(*p);
+            p->computeChecksum();
         }
+
     }
     else
         std::cout << "from client not tcp" << std::endl;
+
     memcpy(pETH->ar_sha, pETH->ar_tha, 6);
     memcpy(pETH->ar_tha, dstMac, 6);
-    if (state == RoutePacket)
-        s.Write(p);
+    if (p->Store)
+        dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.push_back(p);
+    else
+    {
+        s.Write(*p);
+        delete p;
+    }
 
     std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
 }
@@ -194,13 +200,62 @@ void MainWindow::play()
             // poll each ms
             if (s.Poll(1000))
             {
-                Packet p;
-                s.Read(p, true);
-                ip*  pIP = static_cast<ip*>(p.getBuffer());
+                Packet* p = new Packet();
+                s.Read(*p, true);
+                ip*  pIP = static_cast<ip*>(p->getBuffer());
                 if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
                     this->newPacket(s, p, true, macB);
                 else if (pIP->ip_dst == ipA) // from "router" to "client"
                     this->newPacket(s, p, false, macA);
+            }
+            if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue)
+            {
+                std::cout << "Flushing awaiting packets" << std::endl;
+                dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue = false;
+
+                // empty the list of awaiting packets
+
+                std::list<Packet*>::iterator it = dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.begin();
+                std::list<Packet*>::iterator end = dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.end();
+
+                Packet * p = (*it);
+
+                tcp* pTCP = static_cast<tcp*>(p->getBuffer());
+                pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
+                pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
+                p->computeChecksum();
+                s.Write(*p);
+                ++it;
+                std::cout << "Initial packet sent" << std::endl;
+
+                char * data = ((char*)p->getBuffer()) + sizeof(tcp);
+                // not tested ...
+                // write(1, data, p->Size - sizeof(tcp));
+                /*
+                char * data = ((char*)p->getBuffer()) + sizeof(tcp);
+                char buffer[p->Size - sizeof(tcp) - 1];
+                memcpy(buffer, data, p->Size - sizeof(tcp) - 2); // without \r\n
+                buffer[p->Size - sizeof(tcp) - 2] = 0;
+                QString str("<<<B Unrecognized Packet : \"");
+                str += (const char *)buffer;
+                str += "\"";
+                std::cout << str.toStdString().c_str() << std::endl;
+                */
+                dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
+                dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta = 0;
+                int i = 1;
+                while (it != end)
+                {
+                    p = (*it);
+                    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
+                    pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
+                    pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
+                    p->computeChecksum();
+                    s.Write(*p);
+                    std::cout << "Packet #" << i++ <<  " sent." << std::endl;
+                    ++it;
+                }
+                dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.clear();
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);

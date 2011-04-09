@@ -33,7 +33,7 @@ private:
     int state;
     int currentHWIndex;
     void	addNewItem(QString const & ip, uint8_t * mac);
-    void newPacket(RAWSocket & s, Packet & p, bool isFromTarget, uint8_t* dstMac);
+    void newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t* dstMac);
 public slots:
     void fillIps(QString interface);
     void scan();

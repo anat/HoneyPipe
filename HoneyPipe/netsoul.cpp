@@ -1,7 +1,9 @@
 #include "netsoul.h"
 #include "ui_netsoul.h"
 #include <QtGui/QInputDialog>
+#include <QtGui/QMessageBox>
 #include <QtCore/QDate>
+#include <QUrl>
 #include <string>
 #include <cstdio>
 #include <sstream>
@@ -9,12 +11,12 @@
 
 Netsoul::Netsoul(QWidget *parent) :
         QMainWindow(parent),
+        clearQueue(false),
         ui(new Ui::Netsoul),
-	portA(0),
-        portB(0),
-        deltaA(0),
-        deltaB(0),
-        state(0)
+        portA(0), portB(0),
+        deltaA(0), deltaB(0),
+        state(NoInterference),
+        currentMessage(NULL)
 {
     ui->setupUi(this);
     QObject::connect(this->ui->changeMessage, SIGNAL(clicked()), this, SLOT(startWaitForMessage()));
@@ -26,46 +28,42 @@ Netsoul::~Netsoul()
 }
 
 
-bool Netsoul::isProtocol(Packet & p)
+void Netsoul::startWaitForMessage()
 {
-    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-    const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
-
-    tcp* pTCP = (tcp*)p.getBuffer();
-    bool isProtocol = false;
-    if (portA && portB)
-    {
-        if ((pTCP->source == portA && pTCP->dest == portB) ||
-            (pTCP->source == portB && pTCP->dest == portA))
-            isProtocol = true;
-    }
-    else
-    {
-        int i = 0;
-	while (begin[i])
-        {
-            if (!strncmp(begin[i], data, strlen(begin[i])))
-	    {
-                portA = pTCP->source;
-                portB = pTCP->dest;
-                isProtocol = true;
-	    }
-            i++;
-        }
-    }
-    return isProtocol;
+    this->state = WaitingForMessage;
+    this->ui->changeMessage->setText("Stop wait");
 }
 
-void Netsoul::addActivity(const char * message)
+void Netsoul::hasMessage()
 {
-    QString mess(message);
-    this->ui->activity->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activity->toPlainText());
+    Packet* p = *(this->Queue.begin());
+
+    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
+
+    char * data = ((char*)p->getBuffer()) + sizeof(tcp);
+    unsigned char buffer[p->Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p->Size - sizeof(tcp));
+    buffer[p->Size - sizeof(tcp)] = 0;
+    QString  tmp((const char *)buffer);
+    QString newstring = this->currentMessage->getMessage();
+
+    newstring = newstring.replace(" ", "%20");
+    QString res = tmp.replace(this->currentMessage->OriginalMessage, newstring);
+
+    this->addActivity(QString("replace(" + this->currentMessage->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str());
+    p->reduce(p->Size - sizeof(tcp));
+    p->append(res.toStdString().c_str(), res.length());
+    NextDelta = -(this->currentMessage->OriginalMessage.length() - newstring.length());
+    this->addActivity(QString::number(NextDelta).toStdString().c_str());
+    pTCP->ip_len = htons(htons(pTCP->ip_len) + NextDelta);
+    clearQueue = true;
+    this->state = NoInterference;
+
+    delete this->currentMessage;
+    this->currentMessage = NULL;
 }
 
-
-
-
-PacketState Netsoul::sendTargetAToTargetB(Packet & p)
+void Netsoul::sendTargetAToTargetB(Packet & p)
 {
     char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     std::string * msg;
@@ -81,77 +79,45 @@ PacketState Netsoul::sendTargetAToTargetB(Packet & p)
     bool nextDelta = 0;
     if ((msg = this->isMessage(p)))
     {
-        if (this->state & WaitingForMessage)
+        if (this->state == WaitingForMessage)
         {
-            QString res = QInputDialog::getText(this, "Change Message", "Modify this message", QLineEdit::Normal, QString(msg->c_str()));
-            this->state -= WaitingForMessage;
+            this->currentMessage = new ChangeMessage(msg, this);
+            this->currentMessage->show();
+            this->state = WaitingForTyping;
             this->ui->changeMessage->setText("Change next message");
         }
         QString message("A>>> Message from " + QString(this->getUser(p)->c_str()) + " -" + QString(msg->c_str()) + "-");
         this->addActivity(message.toStdString().c_str());
-
-        if (*msg == "test")
-        {
-            unsigned char buffer[p.Size - sizeof(tcp) + 1];
-            memcpy(buffer, data, p.Size - sizeof(tcp)); // without \r\n
-            buffer[p.Size - sizeof(tcp)] = 0;
-            QString  tmp((const char *)buffer);
-            QString res = tmp.replace(QString(msg->c_str()), "CACA2");
-            this->addActivity(res.toStdString().c_str());
-            this->addActivity("NEW MESSAGE :");
-            p.reduce(p.Size - sizeof(tcp));
-            p.append(res.toStdString().c_str(), res.length());
-            pTCP->ip_len = htons(htons(pTCP->ip_len) + 1);
-            nextDelta = 1;
-            //deltaA += 1;
-        }
-        QString str("A>>> Unrecognized Packet : \"");
     }
     else
     {
-        char buffer[p.Size - sizeof(tcp) - 1];
-        memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
-        buffer[p.Size - sizeof(tcp) - 2] = 0;
-        QString str("A>>> Unrecognized Packet : \"");
-        str += (const char *)buffer;
-        str += "\"";
-        //this->addActivity(str.toStdString().c_str());
+        ;
     }
+    if (this->state == WaitingForTyping)
+    {
+        p.Store = true;
+        return;
+    }
+
     pTCP->seq = htonl(htonl(pTCP->seq) + deltaA);
     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + deltaB);
+
     if (nextDelta)
         deltaA += nextDelta;
-    p.computeChecksum();
-    return RoutePacket;
 }
 
 
-PacketState Netsoul::sendTargetBToTargetA(Packet & p)
+void Netsoul::sendTargetBToTargetA(Packet & p)
 {
     std::string * msg;
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
-    QString message("<<<B size = " + QString::number(p.Size - sizeof(tcp))
-    + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = "
-    + QString::number(htonl(pTCP->seq)) + "\tack = "
-    + QString::number(htonl(pTCP->ack_seq)));
-    this->addActivity(message.toStdString().c_str());
-
-
-
     if ((msg = this->isMessage(p)))
     {
-        if (this->state & WaitingForMessage)
-        {
-            QString res = QInputDialog::getText(this, "Change Message", "Modify this message", QLineEdit::Normal, QString(msg->c_str()));
-            this->state -= WaitingForMessage;
-            this->ui->changeMessage->setText("Change next message");
-        }
         QString message("<<<B Message -" + QString(msg->c_str()) + "-");
         this->addActivity(message.toStdString().c_str());
     }
     else
     {
-
         char * data = ((char*)p.getBuffer()) + sizeof(tcp);
         char buffer[p.Size - sizeof(tcp) - 1];
         memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
@@ -161,10 +127,15 @@ PacketState Netsoul::sendTargetBToTargetA(Packet & p)
         str += "\"";
         //this->addActivity(str.toStdString().c_str());
     }
+
+    if (this->state == WaitingForTyping)
+    {
+        p.Store = true;
+        return;
+    }
+
     pTCP->seq = htonl(htonl(pTCP->seq) + deltaB);
     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) - deltaA);
-    p.computeChecksum();
-    return RoutePacket;
 }
 
 std::string *Netsoul::isMessage(Packet & p)
@@ -182,7 +153,6 @@ std::string *Netsoul::isMessage(Packet & p)
             {
                 if ((i < 9 || strncmp(NS_SENDMSG, data+i-9, 8)))
                 {
-                    //return new std::string(data+i+4);
                     int end = 0, start = 0;
                     if (data[i+4] != '_')
                         start = 0;
@@ -224,10 +194,40 @@ std::string * Netsoul::getUser(Packet & p)
 }
 
 
-void Netsoul::startWaitForMessage()
+
+
+bool Netsoul::isProtocol(Packet & p)
 {
-    // fait foirer les paquets ensuite faut faire ca de facon asynchrone
-    //this->state |= WaitingForMessage;
-    //this->ui->changeMessage->setText("Stop wait for tamper");
+    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
+    const char * begin[] = {"salut", "auth_ag", "list_users", "ping", "user_cmd", "state", "exit", NULL};
+
+    tcp* pTCP = (tcp*)p.getBuffer();
+    bool isProtocol = false;
+    if (portA && portB)
+    {
+        if ((pTCP->source == portA && pTCP->dest == portB) ||
+            (pTCP->source == portB && pTCP->dest == portA))
+            isProtocol = true;
+    }
+    else
+    {
+        int i = 0;
+        while (begin[i])
+        {
+            if (!strncmp(begin[i], data, strlen(begin[i])))
+            {
+                portA = pTCP->source;
+                portB = pTCP->dest;
+                isProtocol = true;
+            }
+            i++;
+        }
+    }
+    return isProtocol;
 }
 
+void Netsoul::addActivity(const char * message)
+{
+    QString mess(message);
+    this->ui->activity->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activity->toPlainText());
+}
