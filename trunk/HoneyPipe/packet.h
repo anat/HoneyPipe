@@ -113,15 +113,15 @@ struct tcp : public ip
   uint32_t seq;
   uint32_t ack_seq;
   uint16_t res1:4;
-  //uint16_t doff:4;
-  uint16_t doff:6;
+  uint16_t doff:4;
+  //uint16_t doff:6;
   uint16_t fin:1;
   uint16_t syn:1;
   uint16_t rst:1;
   uint16_t psh:1;
   uint16_t ack:1;
   uint16_t urg:1;
-  //uint16_t res2:2;
+  uint16_t ecn:2;
   uint16_t window;
   uint16_t check;
   uint16_t urg_ptr;
