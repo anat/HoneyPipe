@@ -15,6 +15,7 @@
 #include "http.h"
 #include "IProtocol.hpp"
 #include "changemessage.h"
+
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
@@ -161,38 +162,31 @@ void MainWindow::play()
     else if (this->currentProtocol == NULL)
     {
         startSpoofing();
+        QHostAddress tmp;
+        tmp.setAddress(this->ui->leSourceIP->text());
+        this->info.ipA = htonl(tmp.toIPv4Address());
+        tmp.setAddress(this->ui->leRouterIP->text());
+        this->info.ipB = htonl(tmp.toIPv4Address());
+        tmp.setAddress(this->ui->cbIp->currentText());
+        this->info.myip = htonl(tmp.toIPv4Address());
+        mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), this->info.macA);
+        mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), this->info.macB);
+
+
+
+
+
+        RAWSocket s;
+        s.Create(this->currentHWIndex, ETH_P_IP);
         this->state |= Playing;
         this->ui->pbPlay->setText("Stop");
         if (this->ui->cbProtocol->currentText() == "Netsoul")
-            this->currentProtocol = new Netsoul(this->ui->centralWidget);
+            this->currentProtocol = new Netsoul(this->info, s, this->ui->centralWidget);
         else if (this->ui->cbProtocol->currentText() == "Http")
             this->currentProtocol = new http(this->ui->centralWidget);
         this->currentProtocol->show();
-        RAWSocket s;
-        s.Create(this->currentHWIndex, ETH_P_IP);
 
-        uint32_t ipA, ipB, myip;
-        QHostAddress tmp;
-        tmp.setAddress(this->ui->leSourceIP->text());
-        ipA = htonl(tmp.toIPv4Address());
-        tmp.setAddress(this->ui->leRouterIP->text());
-        ipB = htonl(tmp.toIPv4Address());
-        tmp.setAddress(this->ui->cbIp->currentText());
-        myip = htonl(tmp.toIPv4Address());
 
-        uint8_t macA[6], macB[6];
-
-        mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), macA);
-        mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), macB);
-
-        //Packet test;
-        //test.append(new tcp, sizeof(tcp));
-
-        //tcp* testTCP = (tcp*)test.getBuffer();
-        //testTCP->craftTCP(macA, ipA, macB, ipB);
-        //test.append("jesusjesusjesusjesus", 20);
-        //s.Write(test);
-        //this->state -= Playing;
 
 
         while (this->state & Playing)
@@ -203,10 +197,10 @@ void MainWindow::play()
                 Packet* p = new Packet();
                 s.Read(*p, true);
                 ip*  pIP = static_cast<ip*>(p->getBuffer());
-                if (pIP->ip_src == ipA && pIP->ip_dst != myip) // from "client" to "router"
-                    this->newPacket(s, p, true, macB);
-                else if (pIP->ip_dst == ipA) // from "router" to "client"
-                    this->newPacket(s, p, false, macA);
+                if (pIP->ip_src == this->info.ipA && pIP->ip_dst != this->info.myip) // from "client" to "router"
+                    this->newPacket(s, p, true, this->info.macB);
+                else if (pIP->ip_dst == this->info.ipA) // from "router" to "client"
+                    this->newPacket(s, p, false, this->info.macA);
             }
             if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue)
             {

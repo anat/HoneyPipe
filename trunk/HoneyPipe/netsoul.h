@@ -7,6 +7,8 @@
 #include <string>
 #include "changemessage.h"
 #define NS_SENDMSG "user_cmd "
+#include "rawsocket.h"
+#include "mitminfo.h"
 
 namespace Ui {
     class Netsoul;
@@ -22,7 +24,7 @@ class Netsoul : public QMainWindow,  private IProtocol
 {
     Q_OBJECT
 public:
-    explicit Netsoul(QWidget *parent = 0);
+    explicit Netsoul(MITMInfo & info, RAWSocket & socket, QWidget *parent = 0);
     ~Netsoul();
     virtual bool isProtocol(Packet & p);
     virtual void sendTargetAToTargetB(Packet & p);
@@ -39,12 +41,16 @@ private:
     Ui::Netsoul *ui;
     uint16_t portA;
     uint16_t portB;
-
+    uint32_t currentSeqA;
+    uint32_t currentSeqB;
     int state;
     ChangeMessage* currentMessage;
+    RAWSocket socket;
+    MITMInfo info;
 public slots:
     void startWaitForMessage();
     void hasMessage();
+    void sendNewMessage();
 };
 
 #endif // NETSOUL_H

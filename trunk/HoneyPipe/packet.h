@@ -33,6 +33,8 @@ public:
     void computeChecksum();
     void * getBuffer();
     Packet * getPseudoIPTCPDATA();
+    int getSizeOfData();
+    int getTCPHeaderSize();
     uint32_t Size;
     bool Store;
 };

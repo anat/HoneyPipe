@@ -47,14 +47,40 @@
    <widget class="QPushButton" name="changeMessage">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>30</y>
+      <x>60</x>
+      <y>50</y>
       <width>171</width>
       <height>27</height>
      </rect>
     </property>
     <property name="text">
      <string>Change next message</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="dropMessage">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>50</y>
+      <width>171</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Drop message</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="newMessage">
+    <property name="geometry">
+     <rect>
+      <x>560</x>
+      <y>50</y>
+      <width>171</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>New message</string>
     </property>
    </widget>
   </widget>
