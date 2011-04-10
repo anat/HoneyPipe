@@ -15,6 +15,7 @@
 #include "http.h"
 #include "IProtocol.hpp"
 #include "changemessage.h"
+#include <QThread>
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -109,7 +110,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
     ip*  pIP = static_cast<ip*>(p->getBuffer());
     tcp* pTCP = static_cast<tcp*>(p->getBuffer());
 
-    std::cout << "============== New Packet ==============" << std::endl;
+
 
     if (pIP->isTCP() && p->Size >= sizeof(tcp))
     {
@@ -117,8 +118,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
         if (this->ui->cbProtocol->currentText() == "Netsoul")
             isCurrentProtocol = dynamic_cast<Netsoul *>(this->currentProtocol)->isProtocol(*p);
         if (isCurrentProtocol)
-            std::cout << "\t************** " << this->ui->cbProtocol->currentText().toStdString() << " **************" << std::endl;
-
+            std::cout << "============== New " << this->ui->cbProtocol->currentText().toStdString() << " Packet ==============" << std::endl;
         // Process packet
         if (this->ui->cbProtocol->currentText() == "Netsoul" && isCurrentProtocol)
         {
@@ -128,10 +128,7 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
                 dynamic_cast<Netsoul *>(this->currentProtocol)->sendTargetBToTargetA(*p);
             p->computeChecksum();
         }
-
     }
-    else
-        std::cout << "from client not tcp" << std::endl;
 
     memcpy(pETH->ar_sha, pETH->ar_tha, 6);
     memcpy(pETH->ar_tha, dstMac, 6);
@@ -142,8 +139,8 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
         s.Write(*p);
         delete p;
     }
-
-    std::cout << "============== End of New Packet ==============" << std::endl << std::endl;
+    //if (isCurrentProtocol)
+        //std::cout << "============== End of New " << this->ui->cbProtocol->currentText().toStdString() << " Packet ==============" << std::endl;
 }
 
 
@@ -173,9 +170,6 @@ void MainWindow::play()
         mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), this->info.macB);
 
 
-
-
-
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);
         this->state |= Playing;
@@ -185,9 +179,6 @@ void MainWindow::play()
         else if (this->ui->cbProtocol->currentText() == "Http")
             this->currentProtocol = new http(this->ui->centralWidget);
         this->currentProtocol->show();
-
-
-
 
         while (this->state & Playing)
         {
@@ -217,39 +208,38 @@ void MainWindow::play()
                 tcp* pTCP = static_cast<tcp*>(p->getBuffer());
                 pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
                 pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
+
+
+                std::cout << "Next Delta :" << dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta << std::endl;
+                std::cout << "ip_len before:" <<  htons(pTCP->ip_len) << std::endl;
+
+                pTCP->ip_len = htons(htons(pTCP->ip_len) + dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta);
+
+                std::cout << "ip_len after:" << htons(pTCP->ip_len) << std::endl;
+
                 p->computeChecksum();
                 s.Write(*p);
-                ++it;
-                std::cout << "Initial packet sent" << std::endl;
 
-                char * data = ((char*)p->getBuffer()) + sizeof(tcp);
-                // not tested ...
-                // write(1, data, p->Size - sizeof(tcp));
-                /*
-                char * data = ((char*)p->getBuffer()) + sizeof(tcp);
-                char buffer[p->Size - sizeof(tcp) - 1];
-                memcpy(buffer, data, p->Size - sizeof(tcp) - 2); // without \r\n
-                buffer[p->Size - sizeof(tcp) - 2] = 0;
-                QString str("<<<B Unrecognized Packet : \"");
-                str += (const char *)buffer;
-                str += "\"";
-                std::cout << str.toStdString().c_str() << std::endl;
-                */
+                std::cout << "Initial packet sent ip.len=" << (uint16_t)htons(pTCP->ip_len) << std::endl;
+
+
+
+                ++it;
                 dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
                 dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta = 0;
                 int i = 1;
                 while (it != end)
                 {
                     p = (*it);
-                    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
+                    pTCP = static_cast<tcp*>(p->getBuffer());
                     pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
                     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
                     p->computeChecksum();
                     s.Write(*p);
-                    std::cout << "Packet #" << i++ <<  " sent." << std::endl;
+                    std::cout << "Packet #" << i++ <<  " sent ip.len=" << (uint16_t)htons(pTCP->ip_len) << std::endl;
                     ++it;
                 }
-                dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.clear();
+                dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.clear(); // vide la queue
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
@@ -286,7 +276,6 @@ void MainWindow::scan()
         this->ui->twMain->clearContents();
         this->ui->twMain->setRowCount(0);
         this->nbItem = 0;
-        ARPRequest arpr;
         if (ui->cbIp->count() != 0)
         {
             // get interface ip and mask
@@ -306,7 +295,7 @@ void MainWindow::scan()
                 ip++;
                 current.setIp(QHostAddress(ip));
                 this->statusText->setText("Scan is running - " + current.ip().toString());
-                uint8_t * rep = arpr.doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip), this->ui->sbTimeout->value());
+                uint8_t * rep = ARPRequest::doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip), this->ui->sbTimeout->value());
                 if (rep != NULL)
                     this->addNewItem(current.ip().toString(), rep);
 

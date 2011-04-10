@@ -15,11 +15,6 @@
 #include "rawsocket.h"
 #include <stdlib.h>
 
-ARPRequest::ARPRequest()
-{
-
-}
-
 uint8_t* ARPRequest::doRequest(RAWSocket & s, QNetworkInterface const & interface, int src_ip, int dst_ip, int timeout)
 {
     uint8_t* foundMAC = new uint8_t[6];

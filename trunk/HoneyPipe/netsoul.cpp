@@ -9,9 +9,9 @@
 #include <sstream>
 #include "packet.h"
 #include "rawsocket.h"
+#include <QThread>
 
-Netsoul::Netsoul(MITMInfo & infos, RAWSocket & s, QWidget *parent) :
-        QMainWindow(parent),
+Netsoul::Netsoul(MITMInfo & infos, RAWSocket & s, QWidget *parent) : QMainWindow(parent),
         clearQueue(false),
         ui(new Ui::Netsoul),
         portA(0), portB(0),
@@ -56,11 +56,14 @@ void Netsoul::hasMessage()
     QString res = tmp.replace(this->currentMessage->OriginalMessage, newstring);
 
     this->addActivity(QString("replace(" + this->currentMessage->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str());
+    std::cout << QString("replace(" + this->currentMessage->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str() << std::endl;
     p->reduce(p->Size - sizeof(tcp));
     p->append(res.toStdString().c_str(), res.length());
     NextDelta = -(this->currentMessage->OriginalMessage.length() - newstring.length());
-    this->addActivity(QString::number(NextDelta).toStdString().c_str());
-    pTCP->ip_len = htons(htons(pTCP->ip_len) + NextDelta);
+
+    std::cout << "delta: " << NextDelta << std::endl;
+
+
     clearQueue = true;
     this->state = NoInterference;
 
@@ -92,8 +95,9 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
             this->state = WaitingForTyping;
             this->ui->changeMessage->setText("Change next message");
         }
-        QString message("A>>> Message from " + QString(this->getUser(p)->c_str()) + " -" + QString(msg->c_str()) + "-");
+        QString message("A>>> Message -" + QString(msg->c_str()) + "-");
         this->addActivity(message.toStdString().c_str());
+        std::cout << "Message : " << *msg << std::endl;
     }
     else
     {
@@ -102,6 +106,7 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
     if (this->state == WaitingForTyping)
     {
         p.Store = true;
+        std::cout << "Packet stored queue.size() : " << Queue.size() << std::endl;
         return;
     }
 
