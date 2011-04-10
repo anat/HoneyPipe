@@ -114,13 +114,15 @@ void ip::craftIP(uint8_t *srcmac, uint32_t srcip,
 int Packet::getSizeOfData()
 {
     tcp* pTCP = static_cast<tcp*>(this->buffer);
+
+    return (pTCP->ip_len - (pTCP->ip_hl << 2) - (pTCP->doff << 2));
 }
 
 int Packet::getTCPHeaderSize()
 {
     tcp* pTCP = static_cast<tcp*>(this->buffer);
 
-    //pTCP->ip_len
+    return (pTCP->doff << 2);
 }
 
 void tcp::craftTCP(uint8_t *srcmac, uint32_t srcip,
