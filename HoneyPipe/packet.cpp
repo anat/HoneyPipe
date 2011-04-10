@@ -111,6 +111,18 @@ void ip::craftIP(uint8_t *srcmac, uint32_t srcip,
     this->ip_dst = dstip;
 }
 
+int Packet::getSizeOfData()
+{
+    tcp* pTCP = static_cast<tcp*>(this->buffer);
+}
+
+int Packet::getTCPHeaderSize()
+{
+    tcp* pTCP = static_cast<tcp*>(this->buffer);
+
+    //pTCP->ip_len
+}
+
 void tcp::craftTCP(uint8_t *srcmac, uint32_t srcip,
                    uint8_t *dstmac, uint32_t dstip)
 {

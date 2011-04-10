@@ -8,18 +8,23 @@
 #include <cstdio>
 #include <sstream>
 #include "packet.h"
+#include "rawsocket.h"
 
-Netsoul::Netsoul(QWidget *parent) :
+Netsoul::Netsoul(MITMInfo & infos, RAWSocket & s, QWidget *parent) :
         QMainWindow(parent),
         clearQueue(false),
         ui(new Ui::Netsoul),
         portA(0), portB(0),
         deltaA(0), deltaB(0),
         state(NoInterference),
-        currentMessage(NULL)
+        currentMessage(NULL),
+        info(infos),
+        socket(s)
 {
     ui->setupUi(this);
     QObject::connect(this->ui->changeMessage, SIGNAL(clicked()), this, SLOT(startWaitForMessage()));
+    QObject::connect(this->ui->newMessage, SIGNAL(clicked()), this, SLOT(sendNewMessage()));
+    QObject::connect(this->ui->dropMessage, SIGNAL(clicked()), this, SLOT(dropMessage()));
 }
 
 Netsoul::~Netsoul()
@@ -70,6 +75,7 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
 
 
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
+    //this->currentSeqA = htonl(pTCP->seq) + // TODO
     QString message("A>>> size = " + QString::number(p.Size - sizeof(tcp))
     + "\tisACK = " + QString::number(pTCP->ack) + "\tseq = "
     + QString::number(htonl(pTCP->seq)) + "\tack = "
@@ -231,3 +237,16 @@ void Netsoul::addActivity(const char * message)
     QString mess(message);
     this->ui->activity->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activity->toPlainText());
 }
+
+void Netsoul::sendNewMessage()
+{
+    Packet test;
+    test.append(new tcp, sizeof(tcp));
+
+    tcp* testTCP = (tcp*)test.getBuffer();
+
+    testTCP->craftTCP(this->info.macA, this->info.ipA, this->info.macB, this->info.ipB);
+    test.append("jesusjesusjesusjesus", 20);
+    this->socket.Write(test);
+}
+

@@ -28,7 +28,8 @@ HEADERS  += mainwindow.h \
     netsoul.h \
     rsock.h \
     http.h \
-    changemessage.h
+    changemessage.h \
+    mitminfo.h
 
 FORMS    += mainwindow.ui \
     netsoul.ui \
