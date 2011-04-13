@@ -259,6 +259,10 @@ bool Netsoul::isProtocol(Packet & p)
             {
                 portA = pTCP->source;
                 portB = pTCP->dest;
+		if (htons(portA) == 4242)
+		  info.nssIp = pTCP->ip_src;
+		else if (htons(portB) == 4242)
+		  info.nssIp = pTCP->ip_dst;
                 isProtocol = true;
             }
             i++;
@@ -289,16 +293,18 @@ void Netsoul::sendNewMessage()
 
     tcp* testTCP = (tcp*)test.getBuffer();
 
-    testTCP->craftTCP(this->info.mymac, this->info.ipA, this->info.macB, this->info.ipB,
-		      this->portA, this->portB, this->currentSeqA, this->currentSeqB);
+    printf("%x:%x:%x:%x:%x:%x\n", this->info.mymac[0], this->info.mymac[1], this->info.mymac[2], this->info.mymac[3], this->info.mymac[4], this->info.mymac[5]);
+    testTCP->craftTCP(this->info.mymac, this->info.ipA, this->info.macB, this->info.nssIp,
+		      htons(this->portA), htons(this->portB), htonl(this->currentSeqA), htonl(this->currentSeqB));
 
     test.append("user_cmd msg *:laland_a@*Unknown%20Location%20On%20SameSoul* msg ", 65);
 
-    test.append("jesusjesusjesusjesus", 20);
+    test.append("jesusjesusjesusjesus\n", 21);
 
     testTCP->psh = 1;
-    testTCP->ip_len = 85;
-    testTCP->ip_sum = testTCP->checksumIP((uint16_t *)( ((unsigned char *)testTCP) + sizeof(eth)), 20 >> 1);
+    testTCP->ack = 1;
+    testTCP->ip_len = 86;
+    test.computeChecksum();
     this->socket.Write(test);
     delete this->currentNewMessage;
     this->currentNewMessage = NULL;
