@@ -132,12 +132,17 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
 
     memcpy(pETH->ar_sha, pETH->ar_tha, 6);
     memcpy(pETH->ar_tha, dstMac, 6);
-    if (p->Store)
+    if (p->State == Store)
         dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.push_back(p);
-    else
+    else if (p->State == Drop) ;
+    else if (p->State == Route)
     {
         s.Write(*p);
         delete p;
+    }
+    else
+    {
+        std::cout << "============== Couldn't determine packet action ==============" << std::endl;
     }
     //if (isCurrentProtocol)
         //std::cout << "============== End of New " << this->ui->cbProtocol->currentText().toStdString() << " Packet ==============" << std::endl;
@@ -221,7 +226,6 @@ void MainWindow::play()
                 s.Write(*p);
 
                 std::cout << "Initial packet sent ip.len=" << (uint16_t)htons(pTCP->ip_len) << std::endl;
-
 
 
                 ++it;

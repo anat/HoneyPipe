@@ -3,12 +3,17 @@
 
 ChangeMessage::ChangeMessage(std::string * message, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::ChangeMessage),
-    OriginalMessage(QString(message->c_str()))
+    OriginalMessage(QString(message->c_str())),
+    ui(new Ui::ChangeMessage)
 {
     ui->setupUi(this);
     ui->message->setPlainText(QString(message->c_str()));
-    QObject::connect(ui->btnOk, SIGNAL(clicked()), this->parent(), SLOT(hasMessage()));
+    if (message->length() == 0)
+        QObject::connect(ui->btnOk, SIGNAL(clicked()), this->parent(), SLOT(sendNewMessage()));
+    else
+        QObject::connect(ui->btnOk, SIGNAL(clicked()), this->parent(), SLOT(hasMessage()));
+    ui->message->setFocus();
+    ui->message->moveCursor(QTextCursor::End);
 }
 
 ChangeMessage::~ChangeMessage()

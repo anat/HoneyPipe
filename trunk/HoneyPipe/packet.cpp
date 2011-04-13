@@ -3,11 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-Packet::Packet()
+Packet::Packet() : Size(0), buffer(NULL), State(Route)
 {
-    this->Size = 0;
-    this->buffer = NULL;
-    this->Store = false;
 }
 
 Packet::~Packet()
@@ -126,25 +123,24 @@ int Packet::getTCPHeaderSize()
 }
 
 void tcp::craftTCP(uint8_t *srcmac, uint32_t srcip,
-                   uint8_t *dstmac, uint32_t dstip)
+                   uint8_t *dstmac, uint32_t dstip, uint16_t srcPort, uint16_t dstPort, uint32_t seq, uint32_t ack)
 {
 
     this->craftIP(srcmac, srcip, dstmac, dstip);
     this->ip_p = IPPROTO_TCP;
     this->ip_sum = this->checksumIP((uint16_t *)( ((unsigned char *)this) + sizeof(eth)), 20 >> 1);
 
-    this->source = htons(1337);
-    this->dest = htons(1337);
-    this->seq = htonl(40);
-    this->ack_seq = htonl(5);
+    this->source = htons(srcPort);
+    this->dest = htons(dstPort);
+    this->seq = htonl(seq);
+    this->ack_seq = htonl(ack);
     this->res1 = 5;
     this->doff = 0x6;
-
     this->fin = 0;
     this->syn = 0;
     this->rst = 0;
     this->psh = 0;
-    this->ack = 1;
+    this->ack = 0;
     this->urg = 0;
     //this->res2 = 0;
     this->window = htons(20);
