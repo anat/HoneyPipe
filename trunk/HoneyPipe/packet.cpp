@@ -98,7 +98,7 @@ void ip::craftIP(uint8_t *srcmac, uint32_t srcip,
     this->ip_hl = 5;
     this->ip_v = 4;
     this->ip_tos = 0;
-    this->ip_len = htons(40 + 20); // 16 without options ??
+    this->ip_len = htons(40); // 16 without options ??
     this->ip_id = htons(1337);
     this->ip_off = 0x40;
     this->ip_ttl = 255;
@@ -112,7 +112,7 @@ int Packet::getSizeOfData()
 {
     tcp* pTCP = static_cast<tcp*>(this->buffer);
 
-    return (pTCP->ip_len - (pTCP->ip_hl << 2) - (pTCP->doff << 2));
+    return (htons(pTCP->ip_len) - (pTCP->ip_hl << 2) - (pTCP->doff << 2));
 }
 
 int Packet::getTCPHeaderSize()
@@ -128,7 +128,7 @@ void tcp::craftTCP(uint8_t *srcmac, uint32_t srcip,
 
     this->craftIP(srcmac, srcip, dstmac, dstip);
     this->ip_p = IPPROTO_TCP;
-    this->ip_sum = this->checksumIP((uint16_t *)( ((unsigned char *)this) + sizeof(eth)), 20 >> 1);
+    //this->ip_sum = this->checksumIP((uint16_t *)( ((unsigned char *)this) + sizeof(eth)), 20 >> 1);
 
     this->source = htons(srcPort);
     this->dest = htons(dstPort);

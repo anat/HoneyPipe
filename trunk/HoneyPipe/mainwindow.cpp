@@ -134,7 +134,6 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
     memcpy(pETH->ar_tha, dstMac, 6);
     if (p->State == Store)
         dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.push_back(p);
-    else if (p->State == Drop) ;
     else if (p->State == Route)
     {
         s.Write(*p);
@@ -142,7 +141,8 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
     }
     else
     {
-        std::cout << "============== Couldn't determine packet action ==============" << std::endl;
+        delete p;
+        std::cout << "Packet dropped" << std::endl;
     }
     //if (isCurrentProtocol)
         //std::cout << "============== End of New " << this->ui->cbProtocol->currentText().toStdString() << " Packet ==============" << std::endl;
@@ -173,7 +173,8 @@ void MainWindow::play()
         this->info.myip = htonl(tmp.toIPv4Address());
         mactoa((char*)this->ui->leSourceMAC->text().toStdString().c_str(), this->info.macA);
         mactoa((char*)this->ui->leRouterMAC->text().toStdString().c_str(), this->info.macB);
-
+        QNetworkInterface currentInterface = QNetworkInterface::interfaceFromName(ui->cbInt->currentText());
+        mactoa((char*)currentInterface.hardwareAddress().toLower().toStdString().c_str(), this->info.mymac);
 
         RAWSocket s;
         s.Create(this->currentHWIndex, ETH_P_IP);

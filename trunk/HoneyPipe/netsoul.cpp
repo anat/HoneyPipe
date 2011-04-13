@@ -83,21 +83,6 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
     {
         if (this->state == WaitingForMessage)
         {
-            // Create an ACK and send it
-            Packet pACK;
-            pACK.append(new tcp, sizeof(tcp));
-
-            tcp* ackTCP = (tcp*)pACK.getBuffer();
-
-            //(uint8_t *srcmac, uint32_t srcip,
-            //uint8_t *dstmac, uint32_t dstip, uint16_t srcPort, uint16_t dstPort, uint32_t seq, uint32_t ack)
-            ackTCP->craftTCP(this->info.macA, this->info.ipA, this->info.macB, this->info.ipB,
-                             htons(pTCP->dest), htons(pTCP->source), htons(pTCP->seq), htons(pTCP->ack_seq) + p.getSizeOfData());
-            ackTCP->ack = 1;
-            ackTCP->psh = 0;
-            pACK.computeChecksum();
-            this->socket.Write(pACK);
-
             this->currentMessage = new ChangeMessage(msg, this);
             this->currentMessage->show();
             this->state = WaitingForTyping;
@@ -106,8 +91,22 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
         }
         else if (this->state == DropNextMessage)
         {
+            // Create an ACK and send it
+            Packet pACK;
+            pACK.append(new tcp, sizeof(tcp));
+            tcp* ackTCP = (tcp*)pACK.getBuffer();
+            ackTCP->craftTCP(this->info.mymac, pTCP->ip_dst, this->info.macA, pTCP->ip_src,
+                             htons(pTCP->dest), htons(pTCP->source), htonl(pTCP->ack_seq), htonl(pTCP->seq) + p.getSizeOfData());
+            this->addActivity(QString("GetSizeOfData = " + QString::number(p.getSizeOfData())).toStdString().c_str());
+            this->deltaA -= p.getSizeOfData();
+            ackTCP->ack = 1;
+            ackTCP->psh = 0;
+
+            pACK.computeChecksum();
+            this->socket.Write(pACK);
             p.State = Drop;
             this->addActivity(QString("A>>> Message dropped !!! -" + QString(msg->c_str()) + "-").toStdString().c_str());
+
             this->state = NoInterference;
         }
         else
