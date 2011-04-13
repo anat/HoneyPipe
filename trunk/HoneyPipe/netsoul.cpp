@@ -256,13 +256,10 @@ bool Netsoul::isProtocol(Packet & p)
         {
             if (!strncmp(begin[i], data, strlen(begin[i])))
             {
-                portA = pTCP->source;
-                portB = pTCP->dest;
-		if (htons(portA) == 4242)
-		  info.nssIp = pTCP->ip_src;
-		else if (htons(portB) == 4242)
-		  info.nssIp = pTCP->ip_dst;
-                isProtocol = true;
+	      portB = htons(4242);
+	      portA = (htons(pTCP->source) != 4242) ? pTCP->source : pTCP->dest;
+	      info.nssIp = (htons(pTCP->source) != 4242) ? pTCP->ip_dst : pTCP->ip_src;
+	      isProtocol = true;
             }
             i++;
         }
@@ -292,18 +289,23 @@ void Netsoul::sendNewMessage()
 
     tcp* testTCP = (tcp*)test.getBuffer();
 
-    printf("%x:%x:%x:%x:%x:%x\n", this->info.mymac[0], this->info.mymac[1], this->info.mymac[2], this->info.mymac[3], this->info.mymac[4], this->info.mymac[5]);
     testTCP->craftTCP(this->info.mymac, this->info.ipA, this->info.macB, this->info.nssIp,
 		      htons(this->portA), htons(this->portB), htonl(this->currentSeqA), htonl(this->currentSeqB));
 
-    test.append("user_cmd msg *:laland_a@*Unknown%20Location%20On%20SameSoul* msg ", 65);
+    test.append("user_cmd msg *:korcza_b@*Unknown%20Location%20On%20SameSoul* msg ", 65);
 
     test.append("jesusjesusjesusjesus\n", 21);
 
+    testTCP = (tcp*)test.getBuffer();
+
     testTCP->psh = 1;
     testTCP->ack = 1;
-    testTCP->ip_len = 86;
+    testTCP->ip_len = htons(126);
     test.computeChecksum();
+    //write(1, "----------------", 16);
+    //write(1, test.getBuffer(), 138);
+    //write(1, "----------------", 16);
+    NextDelta += 86;
     this->socket.Write(test);
     delete this->currentNewMessage;
     this->currentNewMessage = NULL;
