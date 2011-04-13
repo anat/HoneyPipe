@@ -9,6 +9,12 @@
 //# define __attribute__(spec)
 #include <netinet/tcp.h>
 
+typedef enum PacketState{
+    Route,
+    Store,
+    Drop
+      } PacketState;
+
 class Packet
 {
 private:
@@ -36,7 +42,7 @@ public:
     int getSizeOfData();
     int getTCPHeaderSize();
     uint32_t Size;
-    bool Store;
+    PacketState State;
 };
 
 struct eth
@@ -126,7 +132,7 @@ struct tcp : public ip
   uint16_t check;
   uint16_t urg_ptr;
   //uint32_t options;
-  void craftTCP(uint8_t *srcmac, uint32_t srcip, uint8_t *dstmac, uint32_t dstip);
+  void craftTCP(uint8_t *srcmac, uint32_t srcip, uint8_t *dstmac, uint32_t dstip, uint16_t srcPort, uint16_t dstPort, uint32_t seq, uint32_t ack);
 } __attribute__ ((packed));
 
 /** TCP Header Format

@@ -17,7 +17,8 @@ namespace Ui {
 typedef enum NetsoulState{
     NoInterference,
     WaitingForMessage,
-    WaitingForTyping
+    WaitingForTyping,
+    DropNextMessage
       } NetsoulState;
 
 class Netsoul : public QMainWindow,  private IProtocol
@@ -45,12 +46,15 @@ private:
     uint32_t currentSeqB;
     int state;
     ChangeMessage* currentMessage;
+    ChangeMessage* currentNewMessage;
     RAWSocket socket;
     MITMInfo info;
 public slots:
     void startWaitForMessage();
     void hasMessage();
     void sendNewMessage();
+    void showNewMessage();
+    void dropMessage();
 };
 
 #endif // NETSOUL_H

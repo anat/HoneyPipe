@@ -67,7 +67,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Drop message</string>
+     <string>Drop next message</string>
     </property>
    </widget>
    <widget class="QPushButton" name="newMessage">
