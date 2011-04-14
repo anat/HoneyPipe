@@ -116,7 +116,7 @@ void Netsoul::sendTargetBToTargetA(Packet & p)
             tcp* ackTCP = (tcp*)pACK.getBuffer();
             ackTCP->craftTCP(this->info.mymac, pTCP->ip_dst, this->info.macB, pTCP->ip_src,
                              htons(pTCP->dest), htons(pTCP->source), htonl(pTCP->ack_seq), htonl(pTCP->seq) + p.getSizeOfData());
-            this->deltaB -= p.getSizeOfData();
+            this->deltaB += p.getSizeOfData();
             ackTCP->ack = 1;
             ackTCP->psh = 0;
 
@@ -139,7 +139,7 @@ void Netsoul::sendTargetBToTargetA(Packet & p)
         return;
     }
 
-    pTCP->seq = htonl(htonl(pTCP->seq) + deltaB);
+    pTCP->seq = htonl(htonl(pTCP->seq) - deltaB);
     pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) - deltaA);
 }
 
