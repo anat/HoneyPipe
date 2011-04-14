@@ -203,9 +203,19 @@ void MainWindow::play()
                 Packet * p = (*it);
 
                 tcp* pTCP = static_cast<tcp*>(p->getBuffer());
+
+		if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue == 1)
+		  {
                 pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
                 pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
                 pTCP->ip_len = htons(htons(pTCP->ip_len) + dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta);
+		  }
+		else
+		  {
+                pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
+                pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
+                pTCP->ip_len = htons(htons(pTCP->ip_len) + dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta);
+		  }
 
                 p->computeChecksum();
                 s.Write(*p);
@@ -217,7 +227,7 @@ void MainWindow::play()
                 if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue == 1)
                     dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
                 else
-                    dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
+                    dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB -= dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
                 dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta = 0;
                 int i = 1;
                 while (it != end)

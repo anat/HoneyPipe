@@ -7,7 +7,7 @@ ChangeMessage::ChangeMessage(ChangeMessageState isFrom, std::string * message, Q
     ui(new Ui::ChangeMessage)
 {
     ui->setupUi(this);
-    ui->message->setPlainText(QString(message->c_str()));
+    ui->message->setPlainText(QString(message->c_str()).replace("%20", " "));
     if (isFrom == A)
     {
         if (message->length() == 0)
