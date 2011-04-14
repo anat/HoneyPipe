@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
         if(iter.isValid())
             if (!iter.hardwareAddress().isEmpty())
             {
-        if (iter.humanReadableName() != "lo")
+	      //if (iter.humanReadableName() != "lo")
         ui->cbInt->addItem(iter.humanReadableName());
         if (iter.humanReadableName() == "eth0")
             ui->cbInt->setEditText("eth0");
@@ -279,8 +279,13 @@ void MainWindow::scan()
                     currentIP = addr;
             this->currentHWIndex = currentInterface.index();
             s.Create(currentInterface.index(), (uint16_t)ETH_P_ALL);
-            unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
-            unsigned int netmask = currentIP.netmask().toIPv4Address();
+            //unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
+            //unsigned int netmask = currentIP.netmask().toIPv4Address();
+            unsigned int netmask = 0xFFFFFF00;
+	    unsigned int ip = 0x0af70507 & netmask;
+            //unsigned int netmask = 0x00FFFFFF;
+	    //unsigned int ip = 0x0005f70a;
+	    printf("%x %x\n", ip, netmask);
             QNetworkAddressEntry current;
             while ((~++ip & ~netmask) && this->state & Scanning)
             {
