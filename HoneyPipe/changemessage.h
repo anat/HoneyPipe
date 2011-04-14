@@ -4,6 +4,11 @@
 #include <QDialog>
 #include <string>
 
+typedef enum changeMessage{
+    A,
+    B
+   } ChangeMessageState;
+
 namespace Ui {
     class ChangeMessage;
 }
@@ -13,11 +18,12 @@ class ChangeMessage : public QDialog
     Q_OBJECT
 
 public:
-    explicit ChangeMessage(std::string * message, QWidget *parent = 0);
+    explicit ChangeMessage(ChangeMessageState isFrom, std::string * message, QWidget *parent = 0);
     ~ChangeMessage();
     QString getMessage();
+    QString getLogin();
     QString OriginalMessage;
-private:
+public:
     Ui::ChangeMessage *ui;
 };
 

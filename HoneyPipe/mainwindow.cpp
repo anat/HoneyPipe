@@ -25,11 +25,12 @@ MainWindow::MainWindow(QWidget *parent) :
         state(0)
 {
     ui->setupUi(this);
-
+    QApplication::setStyle("plastique");
     foreach(QNetworkInterface iter, QNetworkInterface::allInterfaces())
         if(iter.isValid())
             if (!iter.hardwareAddress().isEmpty())
             {
+        if (iter.humanReadableName() != "lo")
         ui->cbInt->addItem(iter.humanReadableName());
         if (iter.humanReadableName() == "eth0")
             ui->cbInt->setEditText("eth0");
@@ -49,13 +50,6 @@ MainWindow::MainWindow(QWidget *parent) :
     this->statusText->setText("No scan running");
     this->ui->sbMain->addPermanentWidget(this->statusText, 200);
     this->ui->sbMain->show();
-
-
-    // FOR UI DEBUG
-    //uint8_t dst_hwaddr[6];
-    //memset(dst_hwaddr, 0xff, 6);
-    //this->addNewItem("Test ", dst_hwaddr);
-
 
     QObject::connect(ui->cbInt, SIGNAL(currentIndexChanged(QString)), this, SLOT(fillIps(QString)));
     QObject::connect(ui->btnScan, SIGNAL(clicked()), this, SLOT(scan()) );
@@ -108,9 +102,6 @@ void MainWindow::newPacket(RAWSocket & s, Packet * p, bool isFromTarget, uint8_t
     bool isCurrentProtocol = false;
     eth* pETH = static_cast<eth*>(p->getBuffer());
     ip*  pIP = static_cast<ip*>(p->getBuffer());
-    tcp* pTCP = static_cast<tcp*>(p->getBuffer());
-
-
 
     if (pIP->isTCP() && p->Size >= sizeof(tcp))
     {
@@ -202,7 +193,7 @@ void MainWindow::play()
             if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue)
             {
                 std::cout << "Flushing awaiting packets" << std::endl;
-                dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue = false;
+
 
                 // empty the list of awaiting packets
 
@@ -214,23 +205,19 @@ void MainWindow::play()
                 tcp* pTCP = static_cast<tcp*>(p->getBuffer());
                 pTCP->seq = htonl(htonl(pTCP->seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA);
                 pTCP->ack_seq = htonl(htonl(pTCP->ack_seq) + dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB);
-
-
-                std::cout << "Next Delta :" << dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta << std::endl;
-                std::cout << "ip_len before:" <<  htons(pTCP->ip_len) << std::endl;
-
                 pTCP->ip_len = htons(htons(pTCP->ip_len) + dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta);
-
-                std::cout << "ip_len after:" << htons(pTCP->ip_len) << std::endl;
 
                 p->computeChecksum();
                 s.Write(*p);
 
-                std::cout << "Initial packet sent ip.len=" << (uint16_t)htons(pTCP->ip_len) << std::endl;
+                std::cout << "Initial packet sent" << std::endl;
 
 
                 ++it;
-                dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
+                if (dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue == 1)
+                    dynamic_cast<Netsoul *>(this->currentProtocol)->deltaA += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
+                else
+                    dynamic_cast<Netsoul *>(this->currentProtocol)->deltaB += dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta;
                 dynamic_cast<Netsoul *>(this->currentProtocol)->NextDelta = 0;
                 int i = 1;
                 while (it != end)
@@ -245,6 +232,7 @@ void MainWindow::play()
                     ++it;
                 }
                 dynamic_cast<Netsoul *>(this->currentProtocol)->Queue.clear(); // vide la queue
+                dynamic_cast<Netsoul *>(this->currentProtocol)->clearQueue = 0;
             }
             QCoreApplication::processEvents();
             QCoreApplication::sendPostedEvents(NULL, 0);
@@ -294,10 +282,8 @@ void MainWindow::scan()
             unsigned int ip = currentIP.ip().toIPv4Address() & currentIP.netmask().toIPv4Address();
             unsigned int netmask = currentIP.netmask().toIPv4Address();
             QNetworkAddressEntry current;
-            uint32_t i = 0;
-            while ((++i & ~netmask) && (~i & ~netmask) && this->state & Scanning)
+            while ((~++ip & ~netmask) && this->state & Scanning)
             {
-                ip++;
                 current.setIp(QHostAddress(ip));
                 this->statusText->setText("Scan is running - " + current.ip().toString());
                 uint8_t * rep = ARPRequest::doRequest(s, currentInterface, htonl(currentIP.ip().toIPv4Address()), htonl(ip), this->ui->sbTimeout->value());

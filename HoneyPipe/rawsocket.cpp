@@ -26,7 +26,6 @@ bool RAWSocket::Create(int index, uint16_t protocol)
     sll.sll_family = AF_PACKET;
     sll.sll_protocol = htons(protocol);
     sll.sll_ifindex = index;
-    std::cout << "Binding" << std::endl;
     if (bind(this->Handler, (struct sockaddr *) &sll, sizeof(struct sockaddr_ll)) == -1)
     {
         std::cout << "Couldn't bind !" << std::endl;
@@ -48,8 +47,7 @@ int RAWSocket::Read(Packet & p, bool create)
     else
         rec = recv(this->Handler, p.getBuffer(), p.Size, 0);
     if (rec == 0 || rec == -1)
-        std::cerr << "recv ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-    //std::cout << "Size Received = " << rec << std::endl;
+        std::cerr << "recv error !" << std::endl;
         return rec;
 }
 
@@ -57,8 +55,7 @@ int RAWSocket::Write(Packet & p)
 {
     int rec = send(this->Handler, p.getBuffer(), p.Size, 0);
     if (rec == 0 || rec == -1)
-        std::cerr << "send ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-    //std::cout << "Size Sent = " << rec << std::endl;
+        std::cerr << "send error" << std::endl;
     return rec;
 }
 
@@ -75,7 +72,7 @@ int RAWSocket::Poll(int timeout)
     t.tv_usec = timeout;
     int result;
     if ((result = select(this->Handler + 1, &(this->rfds), NULL/*&(this->wfds)*/, NULL, (timeout == 0 ? NULL : &t))) == -1)
-        std::cerr << "poll : Select ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        std::cerr << "poll : Select error" << std::endl;
     return FD_ISSET(this->Handler, &(this->rfds));
 }
 

@@ -16,9 +16,12 @@ namespace Ui {
 
 typedef enum NetsoulState{
     NoInterference,
-    WaitingForMessage,
-    WaitingForTyping,
-    DropNextMessage
+    WaitingForMessageA,
+    WaitingForTypingA,
+    DropNextMessageA,
+    WaitingForMessageB,
+    WaitingForTypingB,
+    DropNextMessageB
       } NetsoulState;
 
 class Netsoul : public QMainWindow,  private IProtocol
@@ -31,10 +34,11 @@ public:
     virtual void sendTargetAToTargetB(Packet & p);
     virtual void sendTargetBToTargetA(Packet & p);
     std::string *isMessage(Packet & p);
-    void addActivity(const char * message);
+    void addActivityA(const char * message);
+    void addActivityB(const char * message);
     std::string * getUser(Packet & p);
     std::list<Packet*> Queue;
-    bool clearQueue;
+    int clearQueue;
     uint32_t NextDelta;
     uint32_t deltaA;
     uint32_t deltaB;
@@ -45,16 +49,22 @@ private:
     uint32_t currentSeqA;
     uint32_t currentSeqB;
     int state;
-    ChangeMessage* currentMessage;
-    ChangeMessage* currentNewMessage;
+    ChangeMessage* currentMessageA;
+    ChangeMessage* currentNewMessageA;
+    ChangeMessage* currentMessageB;
+    ChangeMessage* currentNewMessageB;
     RAWSocket socket;
     MITMInfo info;
 public slots:
-    void startWaitForMessage();
-    void hasMessage();
-    void sendNewMessage();
-    void showNewMessage();
-    void dropMessage();
+    void hasMessageA();
+    void hasMessageB();
+    void sendNewMessageA();
+    void startWaitForMessageA();
+    void showNewMessageA();
+    void dropMessageA();
+    void startWaitForMessageB();
+    void showNewMessageB();
+    void dropMessageB();
 };
 
 #endif // NETSOUL_H

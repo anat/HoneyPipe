@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>651</width>
+    <height>407</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,13 +17,13 @@
    <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPlainTextEdit" name="activity">
+   <widget class="QPlainTextEdit" name="activityA">
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>90</y>
-      <width>761</width>
-      <height>441</height>
+      <y>160</y>
+      <width>301</width>
+      <height>211</height>
      </rect>
     </property>
     <property name="font">
@@ -44,57 +44,106 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QPushButton" name="changeMessage">
+   <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
-      <x>60</x>
-      <y>50</y>
-      <width>171</width>
-      <height>27</height>
+      <x>80</x>
+      <y>20</y>
+      <width>181</width>
+      <height>129</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Change next message</string>
+    <property name="title">
+     <string>Message from A (victim)</string>
     </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="changeMessageA">
+       <property name="text">
+        <string>Change next</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="dropMessageA">
+       <property name="text">
+        <string>Drop next</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="newMessageA">
+       <property name="text">
+        <string>New</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
-   <widget class="QPushButton" name="dropMessage">
+   <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>50</y>
-      <width>171</width>
-      <height>27</height>
+      <x>400</x>
+      <y>20</y>
+      <width>181</width>
+      <height>129</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Drop next message</string>
+    <property name="title">
+     <string>Message From B (router)</string>
     </property>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QPushButton" name="changeMessageB">
+       <property name="text">
+        <string>Change next</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="dropMessageB">
+       <property name="text">
+        <string>Drop next</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="newMessageB">
+       <property name="text">
+        <string>New</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
-   <widget class="QPushButton" name="newMessage">
+   <widget class="QPlainTextEdit" name="activityB">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>50</y>
-      <width>171</width>
-      <height>27</height>
+      <x>340</x>
+      <y>160</y>
+      <width>301</width>
+      <height>211</height>
      </rect>
     </property>
-    <property name="text">
-     <string>New message</string>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: black; color:#00FF00;</string>
+    </property>
+    <property name="documentTitle">
+     <string/>
+    </property>
+    <property name="plainText">
+     <string/>
+    </property>
+    <property name="backgroundVisible">
+     <bool>false</bool>
     </property>
    </widget>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>800</width>
-     <height>25</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>
